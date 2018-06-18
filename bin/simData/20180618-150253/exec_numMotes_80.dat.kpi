@@ -1,0 +1,1491 @@
+{
+    "0": {
+        "0": {
+            "collided_cells": {
+                "JOIN_REQUEST": 2
+            }, 
+            "packet_drops": {
+                "max_retries": 1
+            }
+        }, 
+        "1": {
+            "WARNING": "mote didn't send or receive pkts", 
+            "upstream_num_rx": 0, 
+            "ave_current_uA": 8.693500186776232, 
+            "upstream_num_tx": 0, 
+            "sync_time_s": 92.92, 
+            "join_time_s": 94.94, 
+            "location": {
+                "y": 0.02157000217131877, 
+                "x": 0.013541163734709483
+            }, 
+            "lifetime_AA_years": 28.88842780419208, 
+            "upstream_num_lost": 0
+        }, 
+        "2": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.008027755986560248, 
+                "x": 0.04507103675852342
+            }
+        }, 
+        "3": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.011576936524982706, 
+                "x": 0.02038180848104898
+            }
+        }, 
+        "4": {
+            "WARNING": "mote didn't send or receive pkts", 
+            "upstream_num_rx": 0, 
+            "ave_current_uA": 8.522617657511317, 
+            "upstream_num_tx": 0, 
+            "sync_time_s": 3.0300000000000002, 
+            "join_time_s": 6.0600000000000005, 
+            "location": {
+                "y": 0.008229623407465803, 
+                "x": 0.012666274917015663
+            }, 
+            "lifetime_AA_years": 29.46765449346125, 
+            "upstream_num_lost": 0
+        }, 
+        "5": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.021502882454847105, 
+                "x": 0.003555774841187742
+            }
+        }, 
+        "6": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.013445274698444254, 
+                "x": 0.0011063894841568667
+            }
+        }, 
+        "7": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.023164352377115338, 
+                "x": 0.042330931095160174
+            }
+        }, 
+        "8": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.038433815668426186, 
+                "x": 0.04508827887088429
+            }
+        }, 
+        "9": {
+            "WARNING": "mote didn't send or receive pkts", 
+            "collided_cells": {
+                "JOIN_RESPONSE": 1
+            }, 
+            "packet_drops": {
+                "max_retries": 1
+            }, 
+            "upstream_num_rx": 0, 
+            "ave_current_uA": 9.818246433467065, 
+            "upstream_num_tx": 0, 
+            "sync_time_s": 3.0300000000000002, 
+            "join_time_s": 9.09, 
+            "location": {
+                "y": 0.0193469805340325, 
+                "x": 0.0365675697501574
+            }, 
+            "lifetime_AA_years": 25.579063859648027, 
+            "upstream_num_lost": 0
+        }, 
+        "10": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.002998334643121048, 
+                "x": 0.06281545060163796
+            }
+        }, 
+        "11": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.027699620615943887, 
+                "x": 0.0281703136211211
+            }
+        }, 
+        "12": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "JOIN_REQUEST": 2
+            }, 
+            "location": {
+                "y": 0.05850771594282511, 
+                "x": 0.05710077991534257
+            }
+        }, 
+        "13": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.02575109840039025, 
+                "x": 0.026438127363598518
+            }
+        }, 
+        "14": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.0200510885774563, 
+                "x": 0.06996779677600806
+            }
+        }, 
+        "15": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "JOIN_REQUEST": 1
+            }, 
+            "location": {
+                "y": 0.03530120431237005, 
+                "x": 0.05049417784548449
+            }
+        }, 
+        "16": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.057895635280484026, 
+                "x": 0.03670413199720568
+            }
+        }, 
+        "17": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.015079767005136469, 
+                "x": 0.021896275692090628
+            }
+        }, 
+        "18": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.030544139236017398, 
+                "x": 0.07696609756784467
+            }
+        }, 
+        "19": {
+            "WARNING": "mote didn't send or receive pkts", 
+            "upstream_num_rx": 0, 
+            "ave_current_uA": 18.448771145866573, 
+            "upstream_num_tx": 0, 
+            "sync_time_s": 168.67000000000002, 
+            "join_time_s": 191.9, 
+            "location": {
+                "y": 0.06057140609022171, 
+                "x": 0.03667243669203801
+            }, 
+            "lifetime_AA_years": 13.612914948412893, 
+            "upstream_num_lost": 0
+        }, 
+        "20": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "JOIN_REQUEST": 1
+            }, 
+            "location": {
+                "y": 0.009590102824743263, 
+                "x": 0.026281618998342804
+            }
+        }, 
+        "21": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.049282640854612314, 
+                "x": 0.0820500453918751
+            }
+        }, 
+        "22": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "JOIN_REQUEST": 1
+            }, 
+            "location": {
+                "y": 0.06988723006035269, 
+                "x": 0.029006235182343354
+            }
+        }, 
+        "23": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.07064537001619009, 
+                "x": 0.03118558524283277
+            }
+        }, 
+        "24": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.10491041965495118, 
+                "x": 0.02088597836298145
+            }
+        }, 
+        "25": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "JOIN_REQUEST": 1
+            }, 
+            "location": {
+                "y": 0.034113869906554184, 
+                "x": 0.08542011807248928
+            }
+        }, 
+        "26": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.023352408887492793, 
+                "x": 0.036013388995048023
+            }
+        }, 
+        "27": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.031258753424007635, 
+                "x": 0.019688508555406714
+            }
+        }, 
+        "28": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.017502156079970965, 
+                "x": 0.03930906857066596
+            }
+        }, 
+        "29": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.021087945739300396, 
+                "x": 0.0125115526857148
+            }
+        }, 
+        "30": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "JOIN_REQUEST": 1
+            }, 
+            "location": {
+                "y": 0.02048162946150478, 
+                "x": 0.003387811874596691
+            }
+        }, 
+        "31": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.017562508698544477, 
+                "x": 0.04911612488193007
+            }
+        }, 
+        "32": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.09062555223804247, 
+                "x": 0.039122238919687025
+            }
+        }, 
+        "33": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "JOIN_REQUEST": 1
+            }, 
+            "location": {
+                "y": 0.059078518679390735, 
+                "x": 0.03560522500803687
+            }
+        }, 
+        "34": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.03424921856240404, 
+                "x": 0.1151243698211829
+            }
+        }, 
+        "35": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.1055077409068369, 
+                "x": 0.013751759574811229
+            }
+        }, 
+        "36": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.05072355097202552, 
+                "x": 0.0818944563929147
+            }
+        }, 
+        "37": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.026813625716625933, 
+                "x": 0.027221816132836807
+            }
+        }, 
+        "38": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.03104572545683093, 
+                "x": 0.08959380695840213
+            }
+        }, 
+        "39": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "JOIN_REQUEST": 1
+            }, 
+            "location": {
+                "y": 0.1212095854831271, 
+                "x": 0.039610832785078154
+            }
+        }, 
+        "40": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.011091259176297386, 
+                "x": 0.056302116550319914
+            }
+        }, 
+        "41": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.014827065209194301, 
+                "x": 0.027287098243838903
+            }
+        }, 
+        "42": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.05546280292699968, 
+                "x": 0.00613492587535025
+            }
+        }, 
+        "43": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "JOIN_RESPONSE": 1
+            }, 
+            "location": {
+                "y": 0.09845875484295885, 
+                "x": 0.07920456790307429
+            }
+        }, 
+        "44": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.0032735989435908053, 
+                "x": 0.10315736487259453
+            }
+        }, 
+        "45": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.07256421755445286, 
+                "x": 0.12032343416397573
+            }
+        }, 
+        "46": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.07507425365065312, 
+                "x": 0.1140498158857175
+            }
+        }, 
+        "47": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.11700701021237825, 
+                "x": 0.04228635241214551
+            }
+        }, 
+        "48": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.04246705851239985, 
+                "x": 0.11084284173419034
+            }
+        }, 
+        "49": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.04038233841645755, 
+                "x": 0.012641098754245794
+            }
+        }, 
+        "50": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "JOIN_REQUEST": 1
+            }, 
+            "location": {
+                "y": 0.1292974140166977, 
+                "x": 0.07389159401277634
+            }
+        }, 
+        "51": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.08072271774575568, 
+                "x": 0.11324262849317779
+            }
+        }, 
+        "52": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.057345426100252395, 
+                "x": 0.08053704668485029
+            }
+        }, 
+        "53": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.0763079409827403, 
+                "x": 0.11016179890121502
+            }
+        }, 
+        "54": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.14052152847814225, 
+                "x": 0.0768153997020895
+            }
+        }, 
+        "55": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.08116613958466223, 
+                "x": 0.11843317436292167
+            }
+        }, 
+        "56": {
+            "WARNING": "mote didn't send or receive pkts", 
+            "collided_cells": {
+                "JOIN_RESPONSE": 1
+            }, 
+            "upstream_num_rx": 0, 
+            "ave_current_uA": 8.210572193512226, 
+            "upstream_num_tx": 0, 
+            "sync_time_s": 39.39, 
+            "join_time_s": 43.43, 
+            "location": {
+                "y": 0.010481731555195717, 
+                "x": 0.01720127737376409
+            }, 
+            "lifetime_AA_years": 30.58758227713543, 
+            "upstream_num_lost": 0
+        }, 
+        "57": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.01994635331125294, 
+                "x": 0.13085282633169315
+            }
+        }, 
+        "58": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.07250684482507419, 
+                "x": 0.026893709158468226
+            }
+        }, 
+        "59": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.06773549493702014, 
+                "x": 0.07937030086465446
+            }
+        }, 
+        "60": {
+            "WARNING": "mote didn't send or receive pkts", 
+            "collided_cells": {
+                "JOIN_RESPONSE": 1
+            }, 
+            "upstream_num_rx": 0, 
+            "ave_current_uA": 12.307692307692305, 
+            "upstream_num_tx": 0, 
+            "sync_time_s": 168.67000000000002, 
+            "join_time_s": 176.75, 
+            "location": {
+                "y": 0.11555856020859823, 
+                "x": 0.04389620946028494
+            }, 
+            "lifetime_AA_years": 20.405251141552515, 
+            "upstream_num_lost": 0
+        }, 
+        "61": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.09640556185581206, 
+                "x": 0.02017317011014763
+            }
+        }, 
+        "62": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.10949483784102654, 
+                "x": 0.09132556833033978
+            }
+        }, 
+        "63": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.10052334786968564, 
+                "x": 0.05387262377374258
+            }
+        }, 
+        "64": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "JOIN_REQUEST": 1
+            }, 
+            "location": {
+                "y": 0.1119573461692962, 
+                "x": 0.03635942939273962
+            }
+        }, 
+        "65": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.13332527106767345, 
+                "x": 0.08324180238133416
+            }
+        }, 
+        "66": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.04498174531699772, 
+                "x": 0.15875170079091216
+            }
+        }, 
+        "67": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.02553979401529083, 
+                "x": 0.0992574607763762
+            }
+        }, 
+        "68": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.08051090918552306, 
+                "x": 0.07969509641692674
+            }
+        }, 
+        "69": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "JOIN_REQUEST": 1
+            }, 
+            "location": {
+                "y": 0.027434220052676594, 
+                "x": 0.055366510325974505
+            }
+        }, 
+        "70": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.019647255450736756, 
+                "x": 0.007263914320242981
+            }
+        }, 
+        "71": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.005626828200066214, 
+                "x": 0.06326238802727147
+            }
+        }, 
+        "72": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.149465940386458, 
+                "x": 0.03822346239058427
+            }
+        }, 
+        "73": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.16398797607196092, 
+                "x": 0.038675229693916235
+            }
+        }, 
+        "74": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.1270871790766689, 
+                "x": 0.10675461792510266
+            }
+        }, 
+        "75": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.017975542988266757, 
+                "x": 0.03868901949622139
+            }
+        }, 
+        "76": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.05761137701521157, 
+                "x": 0.0845121518871369
+            }
+        }, 
+        "77": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.16528437014693986, 
+                "x": 0.09694402882041919
+            }
+        }, 
+        "78": {
+            "WARNING": "mote didn't send or receive pkts", 
+            "upstream_num_rx": 0, 
+            "ave_current_uA": 9.948723155810574, 
+            "upstream_num_tx": 0, 
+            "sync_time_s": 3.0300000000000002, 
+            "join_time_s": 26.26, 
+            "location": {
+                "y": 0.11258051271913783, 
+                "x": 0.01870763851127799
+            }, 
+            "lifetime_AA_years": 25.243596447322563, 
+            "upstream_num_lost": 0
+        }, 
+        "79": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.03357960422524431, 
+                "x": 0.09634911075178754
+            }
+        }
+    }, 
+    "1": {
+        "0": {
+            "collided_cells": {
+                "6P": 2, 
+                "JOIN_REQUEST": 4, 
+                "EB": 1
+            }, 
+            "packet_drops": {
+                "max_retries": 1
+            }
+        }, 
+        "1": {
+            "upstream_reliability": 0.8, 
+            "collided_cells": {
+                "6P": 3, 
+                "JOIN_REQUEST": 4, 
+                "DIO": 2, 
+                "JOIN_RESPONSE": 2, 
+                "EB": 1
+            }, 
+            "upstream_num_rx": 4, 
+            "latency_avg_s": 15.242500000000001, 
+            "avg_hops": 1.0, 
+            "ave_current_uA": 21.05842947525125, 
+            "upstream_num_tx": 5, 
+            "sync_time_s": 65.65, 
+            "join_time_s": 83.83, 
+            "location": {
+                "y": 0.008539926457184155, 
+                "x": 0.04205958605143412
+            }, 
+            "latency_max_s": 25.92, 
+            "lifetime_AA_years": 11.925939339710382, 
+            "latency_min_s": 1.57, 
+            "upstream_num_lost": 1
+        }, 
+        "2": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.008745414392180018, 
+                "x": 0.0069980043028228245
+            }
+        }, 
+        "3": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "DATA": 1
+            }, 
+            "location": {
+                "y": 0.008226479215859506, 
+                "x": 0.01556252496525179
+            }
+        }, 
+        "4": {
+            "WARNING": "mote didn't send or receive pkts", 
+            "collided_cells": {
+                "JOIN_REQUEST": 1, 
+                "EB": 1
+            }, 
+            "upstream_num_rx": 0, 
+            "ave_current_uA": 20.652818991097924, 
+            "upstream_num_tx": 0, 
+            "sync_time_s": 179.78, 
+            "join_time_s": 202.0, 
+            "location": {
+                "y": 0.04472375823325425, 
+                "x": 0.007097907257372249
+            }, 
+            "lifetime_AA_years": 12.160158505222274, 
+            "upstream_num_lost": 0
+        }, 
+        "5": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.016036051147514163, 
+                "x": 0.04697394290943602
+            }
+        }, 
+        "6": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "6P": 1, 
+                "EB": 1
+            }, 
+            "location": {
+                "y": 0.006394948435387571, 
+                "x": 0.04237897131157775
+            }
+        }, 
+        "7": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "JOIN_REQUEST": 3
+            }, 
+            "location": {
+                "y": 0.0063136331801666445, 
+                "x": 0.013260293224961583
+            }
+        }, 
+        "8": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "JOIN_REQUEST": 1, 
+                "EB": 1
+            }, 
+            "location": {
+                "y": 0.021221663145059466, 
+                "x": 0.06323200204022339
+            }
+        }, 
+        "9": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.042078141785862, 
+                "x": 0.07221320222804539
+            }
+        }, 
+        "10": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "JOIN_REQUEST": 1
+            }, 
+            "location": {
+                "y": 0.03318938469741639, 
+                "x": 0.016575750658688215
+            }
+        }, 
+        "11": {
+            "WARNING": "mote didn't send or receive pkts", 
+            "collided_cells": {
+                "JOIN_REQUEST": 9, 
+                "DIO": 2, 
+                "EB": 1, 
+                "JOIN_RESPONSE": 3
+            }, 
+            "packet_drops": {
+                "max_retries": 3
+            }, 
+            "upstream_num_rx": 0, 
+            "ave_current_uA": 15.083811452356876, 
+            "upstream_num_tx": 0, 
+            "sync_time_s": 22.22, 
+            "join_time_s": 132.31, 
+            "location": {
+                "y": 0.041917883801165456, 
+                "x": 0.07009873128726207
+            }, 
+            "lifetime_AA_years": 16.649740902997973, 
+            "upstream_num_lost": 0
+        }, 
+        "12": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.03284455777757089, 
+                "x": 0.09749677635019394
+            }
+        }, 
+        "13": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "6P": 2, 
+                "JOIN_RESPONSE": 2
+            }, 
+            "location": {
+                "y": 0.06348167638250846, 
+                "x": 0.037259708698217486
+            }
+        }, 
+        "14": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.0238759935366597, 
+                "x": 0.05788860974595744
+            }
+        }, 
+        "15": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "JOIN_REQUEST": 1, 
+                "DIO": 1
+            }, 
+            "location": {
+                "y": 0.06405787257592854, 
+                "x": 0.046695212233826555
+            }
+        }, 
+        "16": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.08423034156522191, 
+                "x": 0.016783599101259927
+            }
+        }, 
+        "17": {
+            "WARNING": "mote didn't send or receive pkts", 
+            "collided_cells": {
+                "6P": 2, 
+                "JOIN_REQUEST": 2, 
+                "DIO": 1, 
+                "JOIN_RESPONSE": 3
+            }, 
+            "packet_drops": {
+                "max_retries": 1
+            }, 
+            "upstream_num_rx": 0, 
+            "ave_current_uA": 17.589254153411094, 
+            "upstream_num_tx": 0, 
+            "sync_time_s": 143.42000000000002, 
+            "join_time_s": 183.82, 
+            "location": {
+                "y": 0.060075367894351195, 
+                "x": 0.0874769024749652
+            }, 
+            "lifetime_AA_years": 14.278124036470956, 
+            "upstream_num_lost": 0
+        }, 
+        "18": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.03878667428011895, 
+                "x": 0.11467854198389182
+            }
+        }, 
+        "19": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.10741459823814148, 
+                "x": 0.04859034200113255
+            }
+        }, 
+        "20": {
+            "WARNING": "mote didn't send or receive pkts", 
+            "collided_cells": {
+                "6P": 2, 
+                "JOIN_REQUEST": 4, 
+                "DIO": 2, 
+                "JOIN_RESPONSE": 1, 
+                "EB": 2
+            }, 
+            "packet_drops": {
+                "max_retries": 1
+            }, 
+            "upstream_num_rx": 0, 
+            "ave_current_uA": 11.720094284030667, 
+            "upstream_num_tx": 0, 
+            "sync_time_s": 30.3, 
+            "join_time_s": 72.72, 
+            "location": {
+                "y": 0.09992803501347103, 
+                "x": 0.041432582509739024
+            }, 
+            "lifetime_AA_years": 21.42828772748108, 
+            "upstream_num_lost": 0
+        }, 
+        "21": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.045967239343973954, 
+                "x": 0.024824164020354256
+            }
+        }, 
+        "22": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.10734353238734573, 
+                "x": 0.0039525076101921686
+            }
+        }, 
+        "23": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "JOIN_REQUEST": 1, 
+                "JOIN_RESPONSE": 1
+            }, 
+            "location": {
+                "y": 0.013224820110360858, 
+                "x": 0.0666545652202063
+            }
+        }, 
+        "24": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.004053749585384958, 
+                "x": 0.019710865396628585
+            }
+        }, 
+        "25": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "6P": 1, 
+                "JOIN_REQUEST": 2, 
+                "EB": 1
+            }, 
+            "location": {
+                "y": 0.036175290713869934, 
+                "x": 0.05792784916333571
+            }
+        }, 
+        "26": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "JOIN_REQUEST": 1, 
+                "DIO": 1
+            }, 
+            "location": {
+                "y": 0.031752419500097884, 
+                "x": 0.03911723662171074
+            }
+        }, 
+        "27": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.022000837532077266, 
+                "x": 0.05906372600025722
+            }
+        }, 
+        "28": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.12595781695911945, 
+                "x": 0.021530608714271482
+            }
+        }, 
+        "29": {
+            "collided_cells": {
+                "DIO": 1, 
+                "JOIN_RESPONSE": 1
+            }, 
+            "packet_drops": {
+                "max_retries": 1
+            }, 
+            "ave_current_uA": 27.76458951533135, 
+            "sync_time_s": 179.78, 
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.09350128120286372, 
+                "x": 0.07583662148149162
+            }, 
+            "lifetime_AA_years": 9.045390437799828
+        }, 
+        "30": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "6P": 1
+            }, 
+            "location": {
+                "y": 0.03771938931949692, 
+                "x": 0.02128666796772094
+            }
+        }, 
+        "31": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "JOIN_REQUEST": 1, 
+                "DIO": 1
+            }, 
+            "location": {
+                "y": 0.05466644787613861, 
+                "x": 0.022216157832792405
+            }
+        }, 
+        "32": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "JOIN_REQUEST": 1
+            }, 
+            "location": {
+                "y": 0.021683118992292028, 
+                "x": 0.10503858925558895
+            }
+        }, 
+        "33": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.05100860694565268, 
+                "x": 0.1037092753001474
+            }
+        }, 
+        "34": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "6P": 1
+            }, 
+            "location": {
+                "y": 0.08196238804994072, 
+                "x": 0.02958591077873174
+            }
+        }, 
+        "35": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.11688666398825387, 
+                "x": 0.023512883699926213
+            }
+        }, 
+        "36": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "JOIN_REQUEST": 1, 
+                "JOIN_RESPONSE": 1
+            }, 
+            "location": {
+                "y": 0.05163603182945009, 
+                "x": 0.006900688043801284
+            }
+        }, 
+        "37": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "JOIN_REQUEST": 1
+            }, 
+            "location": {
+                "y": 0.05206510728163927, 
+                "x": 0.03232388049688861
+            }
+        }, 
+        "38": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "JOIN_RESPONSE": 1
+            }, 
+            "location": {
+                "y": 0.02384066299467258, 
+                "x": 0.14339873868691067
+            }
+        }, 
+        "39": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "6P": 1, 
+                "JOIN_REQUEST": 1
+            }, 
+            "location": {
+                "y": 0.08144775420877759, 
+                "x": 0.031216152247189877
+            }
+        }, 
+        "40": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "6P": 1, 
+                "JOIN_REQUEST": 3
+            }, 
+            "location": {
+                "y": 0.036104314921603375, 
+                "x": 0.022127172452345967
+            }
+        }, 
+        "41": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.06798663838899865, 
+                "x": 0.13925219496199903
+            }
+        }, 
+        "42": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "EB": 1
+            }, 
+            "location": {
+                "y": 0.06896830315894487, 
+                "x": 0.07200052574806315
+            }
+        }, 
+        "43": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "6P": 1, 
+                "JOIN_REQUEST": 2
+            }, 
+            "location": {
+                "y": 0.013891382267240182, 
+                "x": 0.06411089577021634
+            }
+        }, 
+        "44": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.025700322250053365, 
+                "x": 0.009282276366748055
+            }
+        }, 
+        "45": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "DATA": 1
+            }, 
+            "location": {
+                "y": 0.07125784142964708, 
+                "x": 0.07930169649380914
+            }
+        }, 
+        "46": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "6P": 1, 
+                "JOIN_REQUEST": 2
+            }, 
+            "location": {
+                "y": 0.14554760384223908, 
+                "x": 0.003657277109596846
+            }
+        }, 
+        "47": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "6P": 1
+            }, 
+            "location": {
+                "y": 0.07770182796517267, 
+                "x": 0.12790215195215104
+            }
+        }, 
+        "48": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.08797490098921945, 
+                "x": 0.09864465286340796
+            }
+        }, 
+        "49": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "6P": 1, 
+                "JOIN_REQUEST": 2
+            }, 
+            "location": {
+                "y": 0.044776523591864126, 
+                "x": 0.0804553445242725
+            }
+        }, 
+        "50": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.10957956518987266, 
+                "x": 0.06729207395434433
+            }
+        }, 
+        "51": {
+            "upstream_reliability": 0.3333333333333333, 
+            "collided_cells": {
+                "6P": 1, 
+                "JOIN_REQUEST": 4, 
+                "DIO": 1, 
+                "JOIN_RESPONSE": 2
+            }, 
+            "upstream_num_rx": 1, 
+            "latency_avg_s": 20.42, 
+            "avg_hops": 1.0, 
+            "ave_current_uA": 20.678823967249755, 
+            "upstream_num_tx": 3, 
+            "sync_time_s": 65.65, 
+            "join_time_s": 108.07000000000001, 
+            "location": {
+                "y": 0.006702406820476403, 
+                "x": 0.03761135209967614
+            }, 
+            "latency_max_s": 20.42, 
+            "lifetime_AA_years": 12.144866309088123, 
+            "latency_min_s": 20.42, 
+            "upstream_num_lost": 2
+        }, 
+        "52": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "6P": 2, 
+                "JOIN_REQUEST": 1
+            }, 
+            "location": {
+                "y": 0.011450507534342735, 
+                "x": 0.03705835599395946
+            }
+        }, 
+        "53": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.06583915101983917, 
+                "x": 0.13621381458220327
+            }
+        }, 
+        "54": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.00806149078434859, 
+                "x": 0.10589906344294542
+            }
+        }, 
+        "55": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "JOIN_REQUEST": 2
+            }, 
+            "location": {
+                "y": 0.12156745891795695, 
+                "x": 0.0714503855204427
+            }
+        }, 
+        "56": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "EB": 1
+            }, 
+            "location": {
+                "y": 0.05378813901890578, 
+                "x": 0.0022851895206834616
+            }
+        }, 
+        "57": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "JOIN_REQUEST": 1
+            }, 
+            "location": {
+                "y": 0.017601568585708383, 
+                "x": 0.11309567790840647
+            }
+        }, 
+        "58": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.0553292913036858, 
+                "x": 0.13174678208849444
+            }
+        }, 
+        "59": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "DIO": 1
+            }, 
+            "location": {
+                "y": 0.015042343024542437, 
+                "x": 0.09131480750172316
+            }
+        }, 
+        "60": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "JOIN_RESPONSE": 1
+            }, 
+            "location": {
+                "y": 0.06799642393469862, 
+                "x": 0.16384179595933646
+            }
+        }, 
+        "61": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "6P": 1, 
+                "JOIN_REQUEST": 1
+            }, 
+            "location": {
+                "y": 0.05534713088491727, 
+                "x": 0.02204469774603568
+            }
+        }, 
+        "62": {
+            "WARNING": "mote didn't send or receive pkts", 
+            "collided_cells": {
+                "6P": 1, 
+                "JOIN_REQUEST": 5, 
+                "DIO": 1
+            }, 
+            "packet_drops": {
+                "max_retries": 4
+            }, 
+            "upstream_num_rx": 0, 
+            "ave_current_uA": 15.020035356511524, 
+            "upstream_num_tx": 0, 
+            "sync_time_s": 30.3, 
+            "join_time_s": 190.89000000000001, 
+            "location": {
+                "y": 0.08826362063721716, 
+                "x": 0.07011189068827917
+            }, 
+            "lifetime_AA_years": 16.720436839886666, 
+            "upstream_num_lost": 0
+        }, 
+        "63": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.044678670101017004, 
+                "x": 0.11726458912416138
+            }
+        }, 
+        "64": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "JOIN_RESPONSE": 1
+            }, 
+            "location": {
+                "y": 0.03566486699564542, 
+                "x": 0.10668463716634835
+            }
+        }, 
+        "65": {
+            "collided_cells": {
+                "6P": 1, 
+                "JOIN_REQUEST": 2, 
+                "JOIN_RESPONSE": 1
+            }, 
+            "ave_current_uA": 22.20573689416419, 
+            "sync_time_s": 179.78, 
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.06961697152114465, 
+                "x": 0.09501473583035391
+            }, 
+            "lifetime_AA_years": 11.309759892607623
+        }, 
+        "66": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "JOIN_REQUEST": 1
+            }, 
+            "location": {
+                "y": 0.06786151998346979, 
+                "x": 0.038467114009756
+            }
+        }, 
+        "67": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "JOIN_REQUEST": 1
+            }, 
+            "location": {
+                "y": 0.11558620549652243, 
+                "x": 0.04805616314102368
+            }
+        }, 
+        "68": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.1450084202742229, 
+                "x": 0.0630354107643768
+            }
+        }, 
+        "69": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.14131148217089307, 
+                "x": 0.013531012784782193
+            }
+        }, 
+        "70": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.029478299026522548, 
+                "x": 0.10158333206403347
+            }
+        }, 
+        "71": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.09721582437329768, 
+                "x": 0.019855616484389715
+            }
+        }, 
+        "72": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.03531156403515012, 
+                "x": 0.14058183135545577
+            }
+        }, 
+        "73": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.049220014020824765, 
+                "x": 0.09308410302859327
+            }
+        }, 
+        "74": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "EB": 1
+            }, 
+            "location": {
+                "y": 0.10433543497307263, 
+                "x": 0.10330743382035046
+            }
+        }, 
+        "75": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.04544488473539565, 
+                "x": 0.16897216654796987
+            }
+        }, 
+        "76": {
+            "WARNING": "mote didn't join", 
+            "location": {
+                "y": 0.013553237866859913, 
+                "x": 0.01371293896984005
+            }
+        }, 
+        "77": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "6P": 1, 
+                "EB": 1
+            }, 
+            "location": {
+                "y": 0.013386332656068034, 
+                "x": 0.08509595968991046
+            }
+        }, 
+        "78": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "6P": 1
+            }, 
+            "location": {
+                "y": 0.148262432730762, 
+                "x": 0.10484905678224998
+            }
+        }, 
+        "79": {
+            "WARNING": "mote didn't join", 
+            "collided_cells": {
+                "6P": 1, 
+                "JOIN_REQUEST": 1
+            }, 
+            "location": {
+                "y": 0.15939487167826405, 
+                "x": 0.056959330865851254
+            }
+        }
+    }
+}
