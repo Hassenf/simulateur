@@ -2,7 +2,7 @@ import io
 import json
 import pprint
 #import base64
-with open('output_80motes.dat','r') as fd:
+with open('exec_numMotes_80.dat','r') as fd:
     for line in fd:
         #line = line.encode().decode()
         line = line.strip()
