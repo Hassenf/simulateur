@@ -314,7 +314,7 @@ class Tsch(object):
             {
                 '_mote_id':       self.mote.id,
                 'channel':        self.channel,
-                'packet':         self.pktToSend,
+                'packetLOG_PACKET_DROPPED':         self.pktToSend,
                 'isACKed':        isACKed,
             }
         )

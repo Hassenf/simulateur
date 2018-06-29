@@ -2,14 +2,14 @@
     "version":                                             0,
     "execution": {
         "numCPUs":                                         1,
-        "numRuns":                                         500
+        "numRuns":                                         10
     },
     "settings": {
         "combination": {
             "exec_numMotes":                               [100]
         },
         "regular": {
-            "exec_numSlotframesPerRun":                    1000,
+            "exec_numSlotframesPerRun":                    10000,
             "exec_randomSeed":                             "random",
 
             "secjoin_enabled":                             true,

@@ -287,10 +287,20 @@ class SchedulingFunctionMSF(SchedulingFunctionBase):
         :return:
         """
 
+        ''' numTx: counts the number of transmission attempts on that cell
+          each time the node attempts to transmita frame on that cell, numTx is 
+          ncremanted by exactly 1
+
+          numTxAck: counts the number of successful transmission attemps on that cell. 
+          Each time the node receives an acknowledgement for a transmission attempt 
+          numTxAck is incremented by exactly 1
+        ''' 
+
         # for quick access; get preferred parent
         preferred_parent = self.mote.rpl.getPreferredParent()
 
-        # collect TX cells which has enough numTX
+        # collect TX cells which has enough numTX to avoid triggering cell relocation
+        # when the values of numTx and numTxAck are not yet significant
         tx_cell_list = self.mote.tsch.getTxCells(preferred_parent)
         tx_cell_list = {
             slotOffset: cell for slotOffset, cell in tx_cell_list.items() if (
@@ -301,14 +311,14 @@ class SchedulingFunctionMSF(SchedulingFunctionBase):
         # collect PDRs of the TX cells
         def pdr(cell):
             assert cell['numTx'] > 0
-            return cell['numTxAck'] / float(cell['numTx'])
+            return cell['numTxAck'] / float(cell['numTx']) # This is the pdr
         pdr_list = {
             slotOffset: pdr(cell) for slotOffset, cell in tx_cell_list.items()
         }
 
         if len(pdr_list) > 0:
             # pick up TX cells whose PDRs are less than the higest PDR by
-            # MSF_MIN_NUM_TX
+            # MSF_MIN_NUM_TX = 100 default value
             highest_pdr = max(pdr_list.values())
             relocation_cell_list = [
                 {
