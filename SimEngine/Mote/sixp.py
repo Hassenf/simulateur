@@ -70,8 +70,12 @@ class SixP(object):
 
         if transaction is None:
             # ignore this ACK
-            pass
-        elif (
+            return
+
+        if packet['app']['msgType'] == d.SIXP_MSG_TYPE_REQUEST:
+            self.mote.sixp.increment_seqnum(packet['mac']['dstMac'])
+
+        if (
                 (
                     (packet['app']['msgType'] == d.SIXP_MSG_TYPE_RESPONSE)
                     and
@@ -240,7 +244,7 @@ class SixP(object):
                 'packet':   packet
             }
         )
-        self.mote.tsch.enqueue(packet)
+        self.mote.tsch.enqueue(packet, priority=True)
 
     def _recv_request(self, request):
         # identify a transaction instance to proceed
@@ -266,16 +270,32 @@ class SixP(object):
             else:
                 peerMac = transaction.get_peerMac()
                 if self._is_schedule_inconsistency_detected(transaction):
-                    # schedule inconsistency is detected; respond with RC_ERR_SEQNUM
+                    # schedule inconsistency is detected; respond with
+                    # RC_ERR_SEQNUM
                     self.send_response(
                         dstMac      = peerMac,
                         return_code = d.SIXP_RC_ERR_SEQNUM
                     )
                     self.mote.sf.detect_schedule_inconsistency(peerMac)
                 else:
-                    # reset SeqNum when it's a CLEAR request
                     if request['app']['code'] == d.SIXP_CMD_CLEAR:
+                        # reset SeqNum when it's a CLEAR request
                         self._reset_seqnum(request['mac']['srcMac'])
+                    else:
+                        # increment SeqNum managed internally; this could be
+                        # seen not aligned with the text of Section 3.4.6,
+                        # shown below:
+                        #
+                        #    Similarly, a node B increments the SeqNum by
+                        #    exactly 1 after having received the link-layer
+                        #    acknowledgment for the 6P Response (2-step 6P
+                        #    Transaction), or after having sent the link-layer
+                        #    acknowledgment for the 6P Confirmation (3-step 6P
+                        #    Transaction) .
+                        #
+                        # However, this is necessary to avoid ERR_SEQNUM on the
+                        # next request when this transaction ends with timeout.
+                        self.mote.sixp.increment_seqnum(peerMac)
                     # pass the incoming packet to the scheduling function
                     self.mote.sf.recv_request(request)
         else:
@@ -485,15 +505,38 @@ class SixP(object):
         return transaction
 
     def _is_schedule_inconsistency_detected(self, transaction):
+        # draft-ietf-6tisch-6top-protocol-12 says:
+        #   A node computes the expected SeqNum field for the next 6P
+        #   Transaction. If a node receives a 6P Request with a SeqNum value
+        #   that is not the expected one, it has detected an inconsistency.
+        #
+        # although the expression of "expected" seems ambiguous, this shouldn't
+        # mean the received SeqNum value and the SeqNum maintained by the
+        # receiving mote are supposed to be identical.
+
         request = transaction.request
         peerMac = request['mac']['srcMac']
 
-        if   request['app']['code'] == d.SIXP_CMD_CLEAR:
-            returnVal = False
-        elif request['app']['seqNum'] == self._get_seqnum(peerMac):
-            returnVal = False
-        else:
+        if (
+                (request['app']['code'] != d.SIXP_CMD_CLEAR)
+                and
+                (
+                    (
+                        (request['app']['seqNum'] == 0)
+                        and
+                        (self._get_seqnum(peerMac) != 0)
+                    )
+                    or
+                    (
+                        (request['app']['seqNum'] != 0)
+                        and
+                        (self._get_seqnum(peerMac) == 0)
+                    )
+                )
+            ):
             returnVal = True
+        else:
+            returnVal = False
 
         return returnVal
 
@@ -512,7 +555,7 @@ class SixPTransaction(object):
         self.settings         = SimEngine.SimSettings.SimSettings()
         self.log              = SimEngine.SimLog.SimLog().log
 
-         # local variables
+        # local variables
         self.request          = copy.deepcopy(request)
         self.callbakc         = None
         self.type             = self._determine_transaction_type()
@@ -589,9 +632,6 @@ class SixPTransaction(object):
                 'cmd'     : self.request['app']['code']
             }
         )
-
-        # update SeqNum managed by SixP
-        self.mote.sixp.increment_seqnum(self.peerMac)
 
         # invalidate itself
         self._invalidate()
@@ -718,6 +758,12 @@ class SixPTransaction(object):
             )
 
             self._invalidate()
+
+            # remove a pending frame in TX queue if necessary
+            self.mote.tsch.remove_frame_from_tx_queue(
+                type   = d.PKT_TYPE_SIXP,
+                dstMac = self.peerMac
+            )
 
             # need to invoke the callback after the invalidation; otherwise, a new
             # transaction to the same peer would fail due to duplicate (concurrent)

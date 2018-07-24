@@ -28,7 +28,7 @@ KPIS = [
     'sync_time_s',
     'join_time_s',
     'upstream_num_lost',
-    'packet_drops'
+    # 'packet_drops'
 ]
 
 # ============================ main ===========================================

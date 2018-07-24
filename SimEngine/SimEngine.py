@@ -192,7 +192,9 @@ class DiscreteEventEngine(threading.Thread):
 
     def getAsn(self):
         return self.asn
-    
+        
+    def get_mote_by_id(self, mote_id):
+        return self.motes[mote_id]
     #=== scheduling
     
     def scheduleAtAsn(self, asn, cb, uniqueTag, intraSlotOrder):

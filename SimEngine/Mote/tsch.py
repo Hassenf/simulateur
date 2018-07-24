@@ -48,7 +48,7 @@ class Tsch(object):
         self.join_proxy                     = None
         self.iAmSendingEBs                  = False
         self.iAmSendingDIOs                 = False
-        self.drift                          = random.uniform(-d.RADIO_MAXDRIFT, d.RADIO_MAXDRIFT)
+        self.clock                          = Clock(self.mote)
         # backoff state
         self.backoff_exponent               = d.TSCH_MIN_BACKOFF_EXPONENT
         self.backoff_remaining_delay        = 0
@@ -75,13 +75,14 @@ class Tsch(object):
             self.log(
                 SimEngine.SimLog.LOG_TSCH_SYNCED,
                 {
-                    "_mote_id": self.mote.id,
-                    '_mote_x' : self.mote.x,
-                    '_mote_y' : self.mote.y
+                    "_mote_id":   self.mote.id,
+                    "_mote_x":   self.mote.x,
+                    "_mote_y":   self.mote.y,
                 }
             )
 
             self.asnLastSync = self.engine.getAsn()
+            self._start_keep_alive_timer()
 
             # transition: listeningForEB->active
             self.engine.removeFutureEvent(      # remove previously scheduled listeningForEB cells
@@ -101,6 +102,8 @@ class Tsch(object):
             self.mote.sf.stop()
             self.join_proxy  = None
             self.asnLastSync = None
+            self.clock.desync()
+            self._stop_keep_alive_timer()
 
             # transition: active->listeningForEB
             self.engine.removeFutureEvent(      # remove previously scheduled listeningForEB cells
@@ -249,7 +252,7 @@ class Tsch(object):
 
     # data interface with upper layers
 
-    def enqueue(self, packet):
+    def enqueue(self, packet, priority=False):
 
         assert packet['type'] != d.PKT_TYPE_DIO
         assert packet['type'] != d.PKT_TYPE_EB
@@ -260,7 +263,11 @@ class Tsch(object):
 
         # check there is space in txQueue
         if goOn:
-            if len(self.txQueue) >= d.TSCH_QUEUE_SIZE:
+             if (
+                    (priority is False)
+                    and
+                    (len(self.txQueue) >= d.TSCH_QUEUE_SIZE)
+                ):
                 # my TX queue is full
 
                 # drop
@@ -290,8 +297,11 @@ class Tsch(object):
         if goOn:
             # set retriesLeft which should be renewed at every hop
             packet['mac']['retriesLeft'] = d.TSCH_MAXTXRETRIES
-            # add to txQueue
-            self.txQueue    += [packet]
+            if priority:
+                self.txQueue.insert(0, packet)
+            else:
+                # add to txQueue
+                self.txQueue    += [packet]
 
         return goOn
 
@@ -314,7 +324,7 @@ class Tsch(object):
             {
                 '_mote_id':       self.mote.id,
                 'channel':        self.channel,
-                'packetLOG_PACKET_DROPPED':         self.pktToSend,
+                'packet':         self.pktToSend,
                 'isACKed':        isACKed,
             }
         )
@@ -355,8 +365,10 @@ class Tsch(object):
                 cell['numTxAck'] += 1
 
                 # time correction
-                if cell['neighbor'] == self.mote.rpl.getPreferredParent():
+                if self.clock.source == self.pktToSend['mac']['dstMac']:
                     self.asnLastSync = asn # ACK-based sync
+                    self.clock.sync()
+                    self._reset_keep_alive_timer()
 
                 # remove packet from queue
                 self.getTxQueue().remove(self.pktToSend)
@@ -428,8 +440,10 @@ class Tsch(object):
         )
 
         # time correction
-        if packet['mac']['srcMac'] == self.mote.rpl.getPreferredParent():
+        if self.clock.source == packet['mac']['srcMac']:
             self.asnLastSync = asn # packet-based sync
+            self.clock.sync()
+            self._reset_keep_alive_timer()
 
         # update schedule stats
         if self.getIsSync():
@@ -444,6 +458,9 @@ class Tsch(object):
             # dispatch to the right upper layer
             if   packet['type'] == d.PKT_TYPE_SIXP:
                 self.mote.sixp.recv_packet(packet)
+            elif packet['type'] == d.PKT_TYPE_KEEP_ALIVE:
+                # do nothing but send back an ACK
+                pass
             elif 'net' in packet:
                 self.mote.sixlowpan.recvPacket(packet)
             else:
@@ -469,51 +486,18 @@ class Tsch(object):
 
         return isACKed
 
-    def computeTimeOffsetToDagRoot(self):
-        """
-        calculate time offset compared to the DAGroot
-        """
-
-        assert self.getIsSync()
-        assert self.asnLastSync!=None
-
-        if self.mote.dagRoot:
-            return 0.0
-
-        offset               = 0.0
-
-        child                = self.mote
-        if self.mote.rpl.getPreferredParent()!=None:
-            parent_id        = self.mote.rpl.getPreferredParent()
-        else:
-            parent_id        = self.mote.tsch.join_proxy
-        parent               = self.engine.motes[parent_id]
-        parents              = []
-        while True:
-
-            if parent.id in parents:
-                # loop is detected; return the current offset value
-                return offset
-            else:
-                # record the current parent for loop detection
-                parents.append(parent.id)
-
-            secSinceSync     = (self.engine.getAsn()-child.tsch.asnLastSync)*self.settings.tsch_slotDuration
-            # FIXME: for ppm, should we not /10^6?
-            relDrift         = child.tsch.drift - parent.tsch.drift  # ppm
-            offset          += relDrift * secSinceSync               # us
-            if parent.dagRoot:
-                break
-            else:
-                child        = parent
-                parent       = self.engine.motes[child.rpl.getPreferredParent()]
-
-        return offset
-
-    def removeTypeFromQueue(self,type):
+    def remove_frame_from_tx_queue(self, type, dstMac=None):
         i = 0
         while i<len(self.txQueue):
-            if self.txQueue[i]['type'] == type:
+            if (
+                    (self.txQueue[i]['type'] == type)
+                    and
+                    (
+                        (dstMac is None)
+                        or
+                        (self.txQueue[i]['mac']['dstMac'] == dstMac)
+                    )
+                ):
                 del self.txQueue[i]
             else:
                 i += 1
@@ -678,6 +662,19 @@ class Tsch(object):
                 if pkt['mac']['dstMac'] == cell['neighbor']:
                     _pktToSend = pkt
                     break
+            
+            # HACK: don't transmit a frame on a shared link if it has a
+            # dedicated TX link to the destination and doesn't have a
+            # dedicated RX link from the destination. In such a case, the
+            # shared link is used as if it's a dedicated RX.
+            if (
+                    (d.CELLOPTION_SHARED in cell['cellOptions'])
+                    and
+                    (len(self.getTxCells(cell['neighbor'])) > 0)
+                    and
+                    (len(self.getRxCells(cell['neighbor'])) == 0)
+                ):
+                _pktToSend = None
 
             # retransmission backoff algorithm
             if (
@@ -814,6 +811,7 @@ class Tsch(object):
             # receiving EB while not sync'ed
 
             # I'm now sync'ed!
+            self.clock.sync(packet['mac']['srcMac'])
             self.setIsSync(True) # mote
 
             # the mote that sent the EB is now by join proxy
@@ -919,3 +917,143 @@ class Tsch(object):
                 # does not change when a transmission is a failure in a
                 # dedicated link."
                 pass
+
+    # Synchronization / Keep-Alive
+    def _send_keep_alive_message(self):
+        assert self.clock.source is not None
+        packet = {
+            'type': d.PKT_TYPE_KEEP_ALIVE,
+            'mac': {
+                'srcMac': self.mote.id,
+                'dstMac': self.clock.source
+            }
+        }
+        self.enqueue(packet)
+        # the next keep-alive event will be scheduled on receiving an ACK
+
+    def _start_keep_alive_timer(self):
+        assert self.settings.tsch_keep_alive_interval >= 0
+        if (
+                (self.settings.tsch_keep_alive_interval == 0)
+                or
+                (self.mote.dagRoot is True)
+            ):
+            # do nothing
+            pass
+        else:
+            # the clock drift of the child against the parent should be less than
+            # macTsRxWait/2 so that they can communicate with each other. Their
+            # clocks can be off by one clock interval at the most. This means, the
+            # clock difference between the child and the parent could be 2 *
+            # clock_interval just after synchronization. then, the possible minimum
+            # guard time is ((macTsRxWait / 2) - (2 * clock_interval)). When
+            # macTsRxWait is 2,200 usec and clock_interval is 30 usec, the
+            # minimum guard time is 1,040 usec. they will be desynchronized
+            # without keep-alive in 16 seconds as the paper titled "Adaptive
+            # Synchronization in IEEE802.15.4e Networks" describes.
+            #
+            # the keep-alive interval should be configured in config.json with
+            # "tsch_keep_alive_interval".
+            self.engine.scheduleIn(
+                delay          = self.settings.tsch_keep_alive_interval,
+                cb             = self._send_keep_alive_message,
+                uniqueTag      = self._get_keep_alive_event_tag(),
+                intraSlotOrder = d.INTRASLOTORDER_STACKTASKS
+            )
+
+    def _stop_keep_alive_timer(self):
+        self.engine.removeFutureEvent(
+            uniqueTag = self._get_keep_alive_event_tag()
+        )
+
+    def _reset_keep_alive_timer(self):
+        self._stop_keep_alive_timer()
+        self._start_keep_alive_timer()
+
+    def _get_keep_alive_event_tag(self):
+        return '{0}-{1}'.format(self.mote.id, 'tsch.keep_alive_event')
+
+
+class Clock(object):
+    def __init__(self, mote):
+        # singleton
+        self.engine   = SimEngine.SimEngine.SimEngine()
+        self.settings = SimEngine.SimSettings.SimSettings()
+
+        # local variables
+        self.mote = mote
+
+        # instance variables which can be accessed directly from outside
+        self.source = None
+
+        # short-hands
+        self._max_drift = (
+            float(self.settings.tsch_clock_max_drift_ppm) / pow(10, 6)
+        )
+        self._clock_interval = 1.0 / self.settings.tsch_clock_frequency
+
+        self.desync()
+
+    @staticmethod
+    def get_clock_by_mote_id(mote_id):
+        engine = SimEngine.SimEngine.SimEngine()
+        mote = engine.get_mote_by_id(mote_id)
+        return mote.tsch.clock
+
+    def desync(self):
+        self.source             = None
+        self._clock_off_on_sync = 0
+        self._accumulated_error = 0
+        self._last_clock_access = None
+
+    def sync(self, clock_source=None):
+        if self.mote.dagRoot is True:
+            # if you're the DAGRoot, you should have the perfect clock from the
+            # point of view of the network.
+            self._clock_off_on_sync = 0
+        else:
+            if clock_source is None:
+                assert self.source is not None
+            else:
+                self.source = clock_source
+
+            # the clock could be off by between 0 and 30 usec (clock interval)
+            # from the clock source when 32.768 Hz oscillators are used on the
+            # both sides. in addition, the clock source also off from a certain
+            # amount of time from its source.
+            off_from_source = random.random() * self._clock_interval
+            source_clock = self.get_clock_by_mote_id(self.source)
+            self._clock_off_on_sync = off_from_source + source_clock.get_drift()
+
+        self._accumulated_error = 0
+        self._last_clock_access = self.engine.getAsn()
+
+    def get_drift(self):
+        if self.mote.dagRoot is True:
+            # if we're the DAGRoot, we are the clock source of the entire
+            # network. our clock never drifts from itself. Its clock drift is
+            # taken into accout by motes who use our clock as their reference
+            # clock.
+            error = 0
+        else:
+            # the clock drifts by its error rate. for simplicity, we double the
+            # error rate to express clock drift from the time source. That is,
+            # our clock could drift by 30 ppm at the most and the clock of time
+            # source also could drift as well ppm. Then, our clock could drift
+            # by 60 ppm from the clock of the time source.
+            assert self._last_clock_access <= self.engine.getAsn()
+            slot_duration = self.engine.settings.tsch_slotDuration
+            elapsed_slots = self.engine.getAsn() - self._last_clock_access
+            elapsed_time  = elapsed_slots * slot_duration
+            error_rate    = random.uniform(
+                (-1 * self._max_drift * 2),
+                (+1 * self._max_drift * 2)
+            )
+            error = elapsed_time * error_rate
+
+        # update the variables
+        self._accumulated_error += error
+        self._last_clock_access = self.engine.getAsn()
+
+        # return the result
+        return self._clock_off_on_sync + self._accumulated_error
