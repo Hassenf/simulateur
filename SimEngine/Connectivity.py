@@ -13,7 +13,7 @@ The propagate() method is called at every slot. It loops through the
 transmissions occurring during that slot and checks if the transmission fails or
 succeeds.
 """
-# Fadoua
+
 # =========================== imports =========================================
 
 import sys
@@ -24,15 +24,10 @@ import gzip
 from datetime import datetime
 import json
 
-from scipy.stats import t
-from numpy import average, std
-from math import sqrt
-
 import SimSettings
 import SimEngine
 from Mote.Mote import Mote
 from Mote import MoteDefines as d
-import pprint 
 
 # =========================== defines =========================================
 
@@ -160,7 +155,7 @@ class ConnectivityBase(object):
                         srcMac              = thisTran['packet']['mac']['srcMac']
                         srcMote             = self.engine.motes[srcMac]
 
-                         # time at which the packet starts transmitting
+                        # time at which the packet starts transmitting
                         thisTran['txTime']  = srcMote.tsch.clock.get_drift()
 
                         # number of ACKs received by this packet
@@ -171,6 +166,7 @@ class ConnectivityBase(object):
             # === decide which listener gets which packet (rxDone)
 
             for listener in self._get_listeners(channel):
+
                 # random_value will be used for comparison against PDR
                 random_value = random.random()
 
@@ -178,11 +174,11 @@ class ConnectivityBase(object):
                 transmissions = []
                 for t in alltransmissions:
                     pdr = self.get_pdr(
-                    #rssi = self.get_rssi(
                         source      = t['packet']['mac']['srcMac'],
                         destination = listener,
                         channel     = channel,
                     )
+
                     # you can interpret the following line as decision for
                     # reception of the preamble of 't'
                     if random_value < pdr:
@@ -463,6 +459,121 @@ class ConnectivityLinear(ConnectivityBase):
                     }
             parent = mote
 
+
+class ConnectivityGrid(ConnectivityBase):
+    """
+   Grid topology.
+        (2,0) <----> (2,1) <----> (2,2) <----> ... <----> (2,n-1)
+        (1,0) <----> (1,1) <----> (1,2) <----> ... <----> (1,n-1)
+        (0,0) <----> (0,1) <----> (0,2) <----> ... <----> (0,n-1)
+
+    """
+    def __init__(self):
+        # the singleton has already been initialized
+        cls = type(self)
+        if cls._init:
+            return
+
+        # attributes specific to ConnectivityRandom
+        self.coordinates = {}  # (x, y) indexed by mote_id
+        self.pister_hack = PisterHackModel()
+        
+
+        # initialize the singleton
+        super(ConnectivityGrid, self).__init__()
+
+
+
+    def _init_connectivity_matrix(self):
+        
+        
+        # for quick access
+        Nbr_of_motes  = self.settings.exec_numMotes
+        init_min_pdr  = self.settings.conn_random_init_min_pdr
+
+        lines= math.floor(math.sqrt(Nbr_of_motes))
+        columns= math.ceil(Nbr_of_motes/lines)
+
+        # print('Nbr of motes', Nbr_of_motes, 'lines:', lines, 'columns:', columns)
+
+        # Now we build the network by placing nods at their (x,y)
+        for target_mote in self.engine.motes:
+        
+            mote_is_deployed = False
+            # select a tentative coordinate
+            if target_mote.id == 0:
+                self.coordinates[target_mote.id] = (0, 0)
+                target_mote.setLocation(0, 0)  # added Fadoua
+                mote_is_deployed = True
+                continue
+              
+            # else statement:      
+            # if other mote            
+            
+            if mote_is_deployed is False:                                                       
+                        
+                x=int(target_mote.id/columns)
+                y=int(target_mote.id%columns)
+
+                coordinate = (x,y)
+                self.coordinates[target_mote.id] = coordinate
+                target_mote.setLocation(x, y)  # added Fadoua
+                mote_is_deployed = True 
+
+            # print('coordinates of mote', target_mote.id, 'location', self.coordinates[target_mote.id] )
+
+             
+        # specify the PDR, and RSSI levels between motes
+       
+        for src_mote in self.engine.motes:
+            # for dst_mote in self.engine.motes:
+            for dst_mote in self.engine.motes:
+
+                mu = self._get_distance_in_meters(self.coordinates[src_mote.id], self.coordinates[dst_mote.id] )
+                
+                if mu == 1.000:
+                    for channel in range(0, self.settings.phy_numChans):
+                                    
+                        self._set_rssi(src_mote.id, dst_mote.id, channel, -10.0)
+                        self._set_pdr(src_mote.id, dst_mote.id, channel, 1.00)
+                        # self.connectivity_matrix[src_mote.id][dst_mote.id][channel]['rssi'] = 0.00
+                        # print('rssi')
+                else:
+                    for channel in range(0, self.settings.phy_numChans):
+                        self._set_rssi(src_mote.id, dst_mote.id, channel, -1000.0)
+                        self._set_pdr(src_mote.id, dst_mote.id, channel, 0.00)
+                    
+
+               
+                
+
+                # print('distance between src:', src_mote.id, 'and dst:', dst_mote.id , mu)
+
+
+
+
+    @staticmethod
+    def _get_distance_in_meters(mote_a, mote_b):
+        """Compute distance in meters between two points of a and b
+        """
+        return math.sqrt(pow((mote_b[0] - mote_a[0]), 2) + pow((mote_b[1] - mote_a[1]), 2))
+
+
+    def _set_rssi(self, mote_id_1, mote_id_2, channel, rssi):
+        # set the same RSSI to the both directions
+        self.connectivity_matrix[mote_id_1][mote_id_2][channel]['rssi'] = rssi
+        self.connectivity_matrix[mote_id_2][mote_id_1][channel]['rssi'] = rssi
+
+    def _set_pdr(self, mote_id_1, mote_id_2, channel, pdr):
+        # set the same RSSI to the both directions
+        self.connectivity_matrix[mote_id_1][mote_id_2][channel]['pdr'] = pdr
+        self.connectivity_matrix[mote_id_2][mote_id_1][channel]['pdr'] = pdr
+
+
+
+
+
+
 class ConnectivityK7(ConnectivityBase):
     """
     Replay K7 connectivity trace.
@@ -628,6 +739,12 @@ class ConnectivityRandom(ConnectivityBase):
         super(ConnectivityRandom, self).__init__()
 
 
+        # # just or test here: Fadoua
+        # rand1 = random.random()  
+        # rand2 = random.random()  
+        # print('random integers generated here', rand1, rand2)
+
+
     def _init_connectivity_matrix(self):
 
         # ConnectivityRandom doesn't need the connectivity matrix. Instead, it
@@ -648,19 +765,20 @@ class ConnectivityRandom(ConnectivityBase):
         #                the coordinate of the mote
         #     step.2-5 otherwise, go back to step.2-1
 
-        # for quick access these are in the config file
+        # for quick access
         square_side        = self.settings.conn_random_square_side
         init_min_pdr       = self.settings.conn_random_init_min_pdr
         init_min_neighbors = self.settings.conn_random_init_min_neighbors
 
-        assert init_min_neighbors <= self.settings.exec_numMotes #the number of motes to deploy
-              
-        # here I add the processing to save the topology
-        if self.settings.conn_class == 'Random' :
+        assert init_min_neighbors <= self.settings.exec_numMotes
+
+        # this line as well is from my first implementation
+        if self.settings.conn_class == 'Random':
             topo = open("topology"+str('_')+str(self.settings.conn_class )+str('_')+str(len(self.engine.motes))+".txt",self.settings.rw)
             print('create and empty file for the topology')
-      
-        
+
+
+        # this is from my first implementation
         if self.settings.conn_class == 'Random' and self.settings.rw == 'r':
             lines = []
             for line in topo :
@@ -669,12 +787,9 @@ class ConnectivityRandom(ConnectivityBase):
                 i = -1
                 for mote in self.engine.motes :
                     i += 1
-                    coord = lines[i].split(' ')
+                    coord = lines[i].split(' ') # split with a space
                     coord.pop(len(coord)-1) # pop removes the item at the given position in the list
-                    
-                    # if mote_is_deployed is True:
-                    #     continue
-                    
+
                     mote_is_deployed = False
                     while mote_is_deployed is False:
                         self.coordinates[mote.id] = (float(coord[0]),float(coord[1]))
@@ -684,81 +799,110 @@ class ConnectivityRandom(ConnectivityBase):
                         j = 0
                         for mote_id in self.coordinates.keys():
                             if mote.id != mote_id:
-                                pdr = float(coord[2 + j])
-                                # print('---pdr between src dst', mote.id, mote_id, pdr)
+                                rssi = float(coord[2 + j])
+                                pdr = float(coord[3 + j])
+                                
+                                for channel in range(0, self.settings.phy_numChans):
+                                    
+                                    self._set_rssi(mote.id, mote_id, channel, rssi)
+                                    self._set_pdr(mote.id, mote_id, channel, pdr)
 
-                            # pdr = self.compute_pdr(
-                            #     {
-                            #         'mote'      : mote,
-                            #         'coordinate': coordinate
-                            #     },
-                            #     {
-                            #         'mote'      : self._get_mote(mote_id),
-                            #         'coordinate': self.coordinates[mote_id]
-                            #     }
-                            # )
-                                # if init_min_pdr <= pdr:
-                                #     good_pdr_count += 1
-                                j+=1
-
-                        # determine whether we deploy this mote or not
-                        #if (((len(self.coordinates) <= init_min_neighbors) and (len(self.coordinates) == good_pdr_count)) or ((init_min_neighbors < len(self.coordinates)) and (init_min_neighbors <= good_pdr_count))):
-                            # fix the coordinate of the mote
-                            #self.coordinates[mote.id] = coordinate
-
+                                j+=2
+        
                         mote_is_deployed = True
-                        #else:
-                            # try another random coordinate
-                        #    continue   
+
+                    
+
+                for mote in self.engine.motes :
+                    for mote_id in self.coordinates.keys():
+                            rssi=self.get_rssi(mote.id, mote_id, channel=0)
+                            pdr=self.get_pdr(mote.id, mote_id, channel=0)
+                            # print('mote:', mote.id, 'and mote', mote_id, 'RSSI:', rssi, 'PDR:', pdr)
+                                    
 
         # this is to be called whenever I need set the location of the motes
         #for mote in self.engine.motes or self.settings.rw == 'r':
-        for mote in self.engine.motes:
-            if self.settings.rw == 'r':
+        # determine coordinates of the motes
+        # this is what is done by the developers in v1.1.4
+        for target_mote in self.engine.motes:
+            if self.settings.rw == 'r': # added Fadoua
                 continue
 
             mote_is_deployed = False
             while mote_is_deployed is False:
-                
+
                 # select a tentative coordinate
-                if mote.id == 0:
-                    self.coordinates[mote.id] = (0, 0)
-                    mote.setLocation(0,0)  # added Fadoua 
+                if target_mote.id == 0:
+                    #self.coordinates[target_mote.id] = (0, 0)
+                    mid_coodinate= square_side/2
+                    self.coordinates[target_mote.id] = (mid_coodinate, mid_coodinate) # set it in the middle
+                    target_mote.setLocation(mid_coodinate, mid_coodinate)  # added Fadoua
+                    mote_is_deployed = True
+                    continue
+
+                coordinate = (
+                    square_side * random.random(),
+                    square_side * random.random()
+                )
+
+                # count deployed motes who have enough PDR values to this
+                # mote
+                good_pdr_count = 0
+                for deployed_mote_id in self.coordinates.keys():
+                    rssi = self.pister_hack.compute_rssi(
+                        {
+                            'mote'      : target_mote,
+                            'coordinate': coordinate
+                        },
+                        {
+                            'mote'      : self._get_mote(deployed_mote_id),
+                            'coordinate': self.coordinates[deployed_mote_id]
+                        }
+                    )
+                    pdr = self.pister_hack.convert_rssi_to_pdr(rssi)
+                    
+                    # memorize the rssi and pdr values at channel 0
+                    self._set_rssi(target_mote.id, deployed_mote_id, 0, rssi)
+                    self._set_pdr(target_mote.id, deployed_mote_id, 0, pdr)
+
+                    if init_min_pdr <= pdr:
+                        good_pdr_count += 1
+
+                # determine whether we deploy this mote or not
+                if (((len(self.coordinates) <= init_min_neighbors) and (len(self.coordinates) == good_pdr_count)) or ((init_min_neighbors < len(self.coordinates)) and (init_min_neighbors <= good_pdr_count))):
+                    
+                    # fix the coordinate of the mote
+                    self.coordinates[target_mote.id] = coordinate
+                    # copy the rssi and pdr values to other channels
+                    # this is new as compared with the release v1.1.3
+                    for deployed_mote_id in self.coordinates.keys():
+                        rssi = self.get_rssi(target_mote.id, deployed_mote_id, channel=0)
+                        pdr  = self.get_pdr(target_mote.id, deployed_mote_id, channel=0)
+                        
+
+                        for channel in range(1, self.settings.phy_numChans):
+                            self._set_rssi(target_mote.id, deployed_mote_id, channel, rssi)
+                            self._set_pdr(target_mote.id, deployed_mote_id, channel, pdr)
+                            # print('src mote:', target_mote.id, 'dst mote:', deployed_mote_id)
+                            # print('rssi: ', rssi)
+                            # print('pdr: ', pdr)
+                            # print('----------------')
+
+                    target_mote.setLocation(coordinate[0], coordinate[1]) # added Fadoua
                     mote_is_deployed = True
 
-                else: # for any mote apart from the DagRoot
-                    coordinate = (
-                        square_side * random.random(),
-                        square_side * random.random()
-                    )                
-                    # count deployed motes who have enough PDR values to this
-                    # mote
-                    good_pdr_count = 0
-                    for mote_id in self.coordinates.keys():
-                        pdr = self._get_initial_pdr(
-                            {
-                                'mote'      : mote,
-                                'coordinate': coordinate
-                            },
-                            {
-                                'mote'      : self._get_mote(mote_id),
-                                'coordinate': self.coordinates[mote_id]
-                            }
-                        )
-                        if init_min_pdr <= pdr:
-                            good_pdr_count += 1
-
-                    # determine whether we deploy this mote or not
-                    if (((len(self.coordinates) <= init_min_neighbors) and (len(self.coordinates) == good_pdr_count)) or ((init_min_neighbors < len(self.coordinates)) and (init_min_neighbors <= good_pdr_count))):
-                        # fix the coordinate of the mote
-                        self.coordinates[mote.id] = coordinate
-                        mote.setLocation(coordinate[0], coordinate[1])  # added Fadoua to print in KPIs
-                        mote_is_deployed = True
-                    else:
-                        # try another random coordinate
-                        continue
+                    
+            
+                else:
+                    # remove memorized values at channel 0
+                    for deployed_mote_id in self.coordinates.keys():
+                        self._clear_rssi(target_mote.id, deployed_mote_id, channel=0)
+                        self._clear_pdr(target_mote.id, deployed_mote_id, channel=0)
+                    # try another random coordinate
+                    continue
 
 
+        # this is new here I added it from my first implementation 
         for mote in self.engine.motes:
             if self.settings.conn_class == 'Random' and self.settings.rw == 'w':
                 (x,y) = self.coordinates[mote.id]
@@ -769,58 +913,69 @@ class ConnectivityRandom(ConnectivityBase):
                     # topo.write(str(0.0) + " ") # this is to fill in the matix with 0.0 whenever we calculate pdr between mote(x y) and mote(x y)
                     continue
                 if self.settings.conn_class == 'Random' and self.settings.rw == 'w':
-                    topo.write(str(self._get_initial_pdr(
-                            {
-                                'mote'      : mote,
-                                'coordinate': self.coordinates[mote.id]
-                            },
-                            {
-                                'mote'      : m,
-                                'coordinate': self.coordinates[m.id]
-                            }
-                        )) + " ")
+                # else:
+            
+                    topo.write(str(self.get_rssi(mote.id, m.id, 0)) + " " + str(self.get_pdr(mote.id, m.id, 0)) + " ")
+                    # topo.write(str(self.get_rssi(mote.id, m.id, 0)) + " ")
+
+
+                    # topo.write(str(self._get_initial_pdr(
+                    #         {
+                    #             'mote'      : mote,
+                    #             'coordinate': self.coordinates[mote.id]
+                    #         },
+                    #         {
+                    #             'mote'      : m,
+                    #             'coordinate': self.coordinates[m.id]
+                    #         }
+                    #     )
+                    # ) + " ")
 
             if self.settings.conn_class == 'Random' and self.settings.rw == 'w':
                 topo.write('\n')
 
 
 
-    def get_pdr(self, source, destination, channel):
-        return self.pister_hack.compute_pdr(
-            src = {
-                'mote'      : self._get_mote(source),
-                'coordinate': self.coordinates[source]
-            },
-            dst = {
-                'mote'      : self._get_mote(destination),
-                'coordinate': self.coordinates[destination]
-            }
-        )
 
-    def get_rssi(self, source, destination, channel):
-        return self.pister_hack.compute_rssi(
-            src = {
-                'mote'      : self._get_mote(source),
-                'coordinate': self.coordinates[source]
-            },
-            dst = {
-                'mote'      : self._get_mote(destination),
-                'coordinate': self.coordinates[destination]
-            }
-        )
 
     def _get_mote(self, mote_id):
         # there must be a mote having mote_id. otherwise, the following line
         # raises an exception.
         return [mote for mote in self.engine.motes if mote.id == mote_id][0]
 
+    def _set_rssi(self, mote_id_1, mote_id_2, channel, rssi):
+        # set the same RSSI to the both directions
+        self.connectivity_matrix[mote_id_1][mote_id_2][channel]['rssi'] = rssi
+        self.connectivity_matrix[mote_id_2][mote_id_1][channel]['rssi'] = rssi
 
-    def _get_initial_pdr(self, src, dst):
+    def _clear_rssi(self, mote_id_1, mote_id_2, channel):
+        INVALID_RSSI = -1000
+        self._set_rssi(mote_id_1, mote_id_2, channel, rssi=INVALID_RSSI)
+
+    def _set_pdr(self, mote_id_1, mote_id_2, channel, pdr):
+        # set the same RSSI to the both directions
+        self.connectivity_matrix[mote_id_1][mote_id_2][channel]['pdr'] = pdr
+        self.connectivity_matrix[mote_id_2][mote_id_1][channel]['pdr'] = pdr
+
+    def _clear_pdr(self, mote_id_1, mote_id_2, channel):
+        self._set_pdr(mote_id_1, mote_id_2, channel, pdr=0)
+
+    
+
+
+    def _get_initial_pdr(self, src, dst,):
         # return the PDR computed from the mean RSSI by the Pister Hack model.
         
-        rssi = self.pister_hack.compute_mean_rssi(src, dst)
+        # rssi = self.pister_hack.compute_mean_rssi(src, dst)
+        rssi = self.pister_hack.compute_rssi(src, dst)   
         pdr  = self.pister_hack.convert_rssi_to_pdr(rssi)
         #print('---computed pdr for src and dst',src, dst, pdr)
+        
+
+        # rssi = self._set_rssi(mote_id_1.id, mote_id_2, 0, rssi)
+        # pdr  = self._set_pdr(mote_id_1.id, mote_id_2, 0, pdr)
+
+
         return pdr
 
 
@@ -866,73 +1021,47 @@ class PisterHackModel(object):
         self.rssi_cache = {} # indexed by (src_mote.id, dst_mote.id)
 
     def compute_mean_rssi(self, src, dst):
-            # distance in meters
-            # print('distance between', src['coordinate'], dst['coordinate'])
-            distance = self._get_distance_in_meters(
-                src['coordinate'],
-                dst['coordinate']
-            )
+        # distance in meters
+        distance = self._get_distance_in_meters(
+            src['coordinate'],
+            dst['coordinate']
+        )
 
-            # sqrt and inverse of the free space path loss (fspl)
-            free_space_path_loss = (
-                self.SPEED_OF_LIGHT / (4 * math.pi * distance * self.TWO_DOT_FOUR_GHZ)
-            )
+        # sqrt and inverse of the free space path loss (fspl)
+        free_space_path_loss = (
+            self.SPEED_OF_LIGHT / (4 * math.pi * distance * self.TWO_DOT_FOUR_GHZ)
+        )
 
-            # simple friis equation in Pr = Pt + Gt + Gr + 20log10(fspl)
-            pr = (
-                src['mote'].radio.txPower     +
-                src['mote'].radio.antennaGain +
-                dst['mote'].radio.antennaGain +
-                (20 * math.log10(free_space_path_loss))
-            )
+        # simple friis equation in Pr = Pt + Gt + Gr + 20log10(fspl)
+        pr = (
+            src['mote'].radio.txPower     +
+            src['mote'].radio.antennaGain +
+            dst['mote'].radio.antennaGain +
+            (20 * math.log10(free_space_path_loss))
+        )
 
-            # according to the receiver power (RSSI) we can apply the Pister hack
-            # model.
-            return pr - self.PISTER_HACK_LOWER_SHIFT / 2    # choosing the "mean" value
+        # according to the receiver power (RSSI) we can apply the Pister hack
+        # model.
+        return pr - self.PISTER_HACK_LOWER_SHIFT / 2    # choosing the "mean" value
 
-    def compute_rssi(self, src, dst, no_cache=False):
+    def compute_rssi(self, src, dst):
         """Compute RSSI between the points of a and b using Pister Hack"""
 
         assert sorted(src.keys()) == sorted(['mote', 'coordinate'])
         assert sorted(dst.keys()) == sorted(['mote', 'coordinate'])
 
-        # we cache computed RSSI values so that we can return the same RSSI
-        # value for the same combination of src, dst, and ASN. The caching is
-        # disabled on ASN 0. Otherwise,
-        # ConnectivityRandom._init_connectivity_matrix() never finished.
-        cache_key = (src['mote'].id, dst['mote'].id)
+        # compute the mean RSSI (== friis - 20)
+        mu = self.compute_mean_rssi(src, dst)
 
-        if (
-                (no_cache is False)
-                and
-                (self.engine.getAsn() > 0)
-                and
-                (cache_key in self.rssi_cache)
-                and
-                (self.rssi_cache[cache_key]['asn'] == self.engine.getAsn())
-            ):
-            # We've already computed the RSSI value for the src, dst, and ASN
-            rssi = self.rssi_cache[cache_key]['rssi']
-
-        else:
-            # compute the mean RSSI (== friis - 20)
-            mu = self.compute_mean_rssi(src, dst)
-
-            # the receiver will receive the packet with an rssi uniformly
-            # distributed between friis and (friis - 40)
-            rssi = (
-                mu +
-                random.uniform(
-                    -self.PISTER_HACK_LOWER_SHIFT/2,
-                    +self.PISTER_HACK_LOWER_SHIFT/2
-                )
+        # the receiver will receive the packet with an rssi uniformly
+        # distributed between friis and (friis - 40)
+        rssi = (
+            mu +
+            random.uniform(
+                -self.PISTER_HACK_LOWER_SHIFT/2,
+                +self.PISTER_HACK_LOWER_SHIFT/2
             )
-
-            # cached the RSSI value
-            self.rssi_cache[cache_key] = {
-                'asn' : self.engine.getAsn(),
-                'rssi': rssi
-            }
+        )
 
         return rssi
 
@@ -955,15 +1084,6 @@ class PisterHackModel(object):
         assert pdr <= 1.0
         return pdr
 
-    def compute_pdr(self, src, dst, no_cache=False):
-        """Compute PDR between the points of src and dst"""
-
-        assert sorted(src.keys()) == sorted(['mote', 'coordinate'])
-        assert sorted(dst.keys()) == sorted(['mote', 'coordinate'])
-
-        rssi = self.compute_rssi(src, dst, no_cache)
-        return self.convert_rssi_to_pdr(rssi)
-
     @staticmethod
     def _get_distance_in_meters(a, b):
         """Compute distance in meters between two points of a and b
@@ -975,5 +1095,3 @@ class PisterHackModel(object):
             pow((b[0] - a[0]), 2) +
             pow((b[1] - a[1]), 2)
         )
-
-    

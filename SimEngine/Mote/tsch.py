@@ -21,6 +21,7 @@ import SimEngine
 class Tsch(object):
 
     MINIMAL_SHARED_CELL = {
+       
         'slotOffset'   : 0,
         'channelOffset': 0,
         'neighbor'     : None, # None means "any"
@@ -40,6 +41,7 @@ class Tsch(object):
         # local variables
         self.schedule                       = {}      # indexed by slotOffset, contains cell
         self.txQueue                        = []
+        self.neighbor_table                  = []
         self.pktToSend                      = None
         self.waitingFor                     = None
         self.channel                        = None
@@ -47,8 +49,8 @@ class Tsch(object):
         self.isSync                         = False
         self.join_proxy                     = None
         self.iAmSendingEBs                  = False
-        self.iAmSendingDIOs                 = False
         self.clock                          = Clock(self.mote)
+        self.otherCells                     = []
         # backoff state
         self.backoff_exponent               = d.TSCH_MIN_BACKOFF_EXPONENT
         self.backoff_remaining_delay        = 0
@@ -76,13 +78,13 @@ class Tsch(object):
                 SimEngine.SimLog.LOG_TSCH_SYNCED,
                 {
                     "_mote_id":   self.mote.id,
-                    "_mote_x":   self.mote.x,
-                    "_mote_y":   self.mote.y,
+                    "_mote_x" : self.mote.x,
+                    "_mote_y" : self.mote.y
                 }
             )
 
             self.asnLastSync = self.engine.getAsn()
-            self._start_keep_alive_timer()
+            self._start_keep_alive_timer() # Fadoua commented this out to remove keep alive function
 
             # transition: listeningForEB->active
             self.engine.removeFutureEvent(      # remove previously scheduled listeningForEB cells
@@ -103,7 +105,7 @@ class Tsch(object):
             self.join_proxy  = None
             self.asnLastSync = None
             self.clock.desync()
-            self._stop_keep_alive_timer()
+            self._stop_keep_alive_timer() # Fadoua commented this out to remove keep alive function
 
             # transition: active->listeningForEB
             self.engine.removeFutureEvent(      # remove previously scheduled listeningForEB cells
@@ -166,9 +168,6 @@ class Tsch(object):
     def startSendingEBs(self):
         self.iAmSendingEBs  = True
 
-    def startSendingDIOs(self):
-        self.iAmSendingDIOs = True
-
     # minimal
 
     def add_minimal_cell(self):
@@ -176,8 +175,8 @@ class Tsch(object):
         self.addCell(**self.MINIMAL_SHARED_CELL)
 
     def delete_minimal_cell(self):
-
-        self.deleteCell(**self.MINIMAL_SHARED_CELL)
+        reason = 'minimal cell'
+        self.deleteCell(reason ,**self.MINIMAL_SHARED_CELL)
 
     # schedule interface
 
@@ -188,6 +187,29 @@ class Tsch(object):
         if neighbor!=None:
             assert isinstance(neighbor, int)
         assert isinstance(cellOptions, list)
+
+        
+        # print('********* Src', self.mote.id, 'Dst', neighbor)
+        # print('*********   slotoffset', slotOffset, 'channelOffset', channelOffset)
+        # print('*********   self.schedule.keys() of mote',self.mote.id, self.schedule.keys())
+        # print('*********   self.schedule', self.schedule)
+
+        
+
+
+        # if (len(self.mote.tsch.schedule.keys()) >= d.MSF_MAX_TABLE_SIZE_USABLE ): # the schedule is full, I reached the max_usable_size of the table
+        #     # we don't have available cells right now
+        #     self.log(
+        #         SimEngine.SimLog.LOG_MSF_ERROR_SCHEDULE_FULL,
+        #         {
+        #             '_mote_id'    : self.mote.id,
+        #             'neighbor'    : neighbor
+
+        #         }
+        #     )
+        #     return
+
+        # else:
 
         # make sure I have no activity at that slotOffset already
         assert slotOffset not in self.schedule.keys()
@@ -204,7 +226,12 @@ class Tsch(object):
             }
         )
 
+        
+        #should I double-check here if the schedule is full then drop the adding request
+
+
         # add cell
+        # Fadoua: here is where the actual adding of the cell happen
         self.schedule[slotOffset] = {
             'channelOffset':      channelOffset,
             'neighbor':           neighbor,
@@ -219,32 +246,139 @@ class Tsch(object):
         if self.getIsSync():
             self.tsch_schedule_next_active_cell()
 
-    def deleteCell(self, slotOffset, channelOffset, neighbor, cellOptions):
+    def deleteCell(self, reason, slotOffset, channelOffset, neighbor, cellOptions):
         assert isinstance(slotOffset, int)
         assert isinstance(channelOffset, int)
         assert (neighbor is None) or (isinstance(neighbor, int))
         assert isinstance(cellOptions, list)
 
         # make sure I'm removing a cell that I have in my schedule
-        assert slotOffset in self.schedule.keys()
-        assert self.schedule[slotOffset]['channelOffset']  == channelOffset
-        assert self.schedule[slotOffset]['neighbor']       == neighbor
-        assert self.schedule[slotOffset]['cellOptions']    == cellOptions
+        
+        # print('-------------------------------- Mote:', self.mote.id, 'neighbor', neighbor)
+        # print('the slotOffset:',slotOffset)
+        # print('self.schedule[slotOffset][neighbor]', self.schedule[slotOffset]['neighbor'] )
+        # print('la raison de la supression est ', reason)
+        # print('the schedule keys:', self.schedule.keys())
 
-        # log
-        self.log(
-            SimEngine.SimLog.LOG_TSCH_DELETE_CELL,
-            {
-                '_mote_id':       self.mote.id,
-                'slotOffset':     slotOffset,
-                'channelOffset':  channelOffset,
-                'neighbor':       neighbor,
-                'cellOptions':    cellOptions,
-            }
-        )
+        
 
-        # delete cell
-        del self.schedule[slotOffset]
+        # assert slotOffset in self.schedule.keys()
+        
+        if (slotOffset not in self.schedule.keys()): # this is added to see if it resolve the current issue !!!!!!!!!!!!!! 
+            pass
+
+        else:
+
+            assert self.schedule[slotOffset]['channelOffset']  == channelOffset
+            assert self.schedule[slotOffset]['neighbor']       == neighbor
+            assert self.schedule[slotOffset]['cellOptions']    == cellOptions
+
+            lockedSlots= list (self.mote.sf.locked_slots)
+
+
+
+            # log
+            self.log(
+                SimEngine.SimLog.LOG_TSCH_DELETE_CELL,
+                {
+                    '_mote_id':       self.mote.id,
+                    'reason'   :      reason,
+                    'slotOffset':     slotOffset,
+                    'slotOffsets_inTable' : self.schedule.keys(),
+                    'channelOffset':  channelOffset,
+                    'neighbor':       neighbor,
+                    'cellOptions':    cellOptions,
+                    'locked_slots': lockedSlots
+                }
+            )
+
+
+        # #***********************************************************************************
+        # # Fadoua: I needs test again if I have an on-going transmission, leave one guard cell
+        # i = 0
+        # txQueue = self.mote.tsch.getTxQueue()
+        # pending_DATA_pkts = False
+        # code_test = False
+        # list_old_parents= self.mote.rpl.get_list_of_old_parents()
+
+        
+        
+            # if simply delete the minimal cell
+            if(reason == "minimal cell"):
+                del self.schedule[slotOffset]
+
+            else:
+
+                source= self.engine.motes[neighbor]
+
+                # print('mote', self.mote.id, 'schedule table keys', self.schedule.keys() )
+                # print('neighbor', neighbor, 'schedule table keys',source.tsch.schedule.keys() )
+
+                # source= self.engine.motes[neighbor]
+                pp= source.rpl.getPreferredParent() # the current preferred parent
+                hello= source.tsch.getDedicatedCells(self.mote.id)
+                # print('**************************Helloooo list to test', hello)
+
+                list_cell_to_neighbor= self.getDedicatedCells(neighbor)
+
+                # for the root of the DAG
+                if (self.mote.dagRoot is True):
+    
+                    pending_DATA_pkts = self.double_check_txQueue(neighbor)
+
+                    if (pending_DATA_pkts == True):
+                        if (len(list_cell_to_neighbor) <= 1):
+                            pass
+                        else:
+                            del self.schedule[slotOffset]
+
+                    elif ((pp == self.mote.id) and (len(list_cell_to_neighbor) <= 1)): # the current preferred parent of source is the root and we have only one dedicated cell -- do not supress it
+                        pass       
+                    
+                    else:
+                        del self.schedule[slotOffset]
+
+                # not a DAG root
+                else:
+                
+                    if (source.id != 0): 
+                    
+                        list_old_parents= source.rpl.get_list_of_old_parents()
+                        # print('--------- old parent list of mote: ', source.id, 'is: ', list_old_parents )
+
+                        if((pp==self.mote.id) or (self.mote.id in list_old_parents)): # in mote is a current preferred parent of source or mote was one of the old preferred parents of source
+                        
+                            # in case of routing loop -- routing loops are tolerated by RPL to some extend
+                            # so whnever I have a routing loop, I need double-check both queues before taking
+                            # a decision of cell deletion from schedule
+                            # some times I have routing loops that occured in the past and now I need clean up the schedules
+                            # decisions need to be made cerefully with regards to all possible cases
+
+                            mote_list_old_parents= self.mote.rpl.get_list_of_old_parents()
+                        
+                            if (neighbor in mote_list_old_parents): # an old routing loop was there
+                            
+                                pending_DATA_pkts = source.tsch.double_check_txQueue(self.mote.id)
+                                # print('pending_DATA_pkts', pending_DATA_pkts)
+                                self.decision_to_delete_cell(neighbor, slotOffset, pending_DATA_pkts)
+                            
+                            else: 
+                                pending_DATA_pkts = self.double_check_txQueue(neighbor)
+                                # print('helooooooooooooooooo pending_DATA_pkts', pending_DATA_pkts)
+                                self.decision_to_delete_cell(neighbor, slotOffset, pending_DATA_pkts)
+
+                        else: # in case of transmitter
+                        
+                            pending_DATA_pkts = source.tsch.double_check_txQueue(self.mote.id)
+                            # print('taaaaaaaaaaa pending_DATA_pkts', pending_DATA_pkts)
+                            self.decision_to_delete_cell(neighbor, slotOffset, pending_DATA_pkts)
+
+
+                    else: # if the source (neighbor) is the DAG root
+
+                        pending_DATA_pkts = source.tsch.double_check_txQueue(self.mote.id)
+                        self.decision_to_delete_cell(neighbor, slotOffset, pending_DATA_pkts)
+
 
         # reschedule the next active cell, in case it is now earlier
         if self.getIsSync():
@@ -252,9 +386,166 @@ class Tsch(object):
 
     # data interface with upper layers
 
+    def double_check_txQueue(self, neighbor):
+        
+        source= self.engine.motes[neighbor]
+        txQueue = source.tsch.getTxQueue()
+        
+        i=0
+        
+        pending_DATA_pkts = False
+                
+        while (i<len(txQueue) and (pending_DATA_pkts == False)):    
+
+            if (txQueue[i]['type'] == 'DATA') and (txQueue[i]['mac']['dstMac'] == self.mote.id) and  (txQueue[i]['mac']['retriesLeft'] >= 0):
+                pending_DATA_pkts = True
+            else:
+                pending_DATA_pkts = False 
+            i += 1 
+
+        return (pending_DATA_pkts)
+
+    def decision_to_delete_cell (self, neighbor, slotOffset, pending_DATA_pkts):
+
+        # assert slotOffset in self.schedule.keys()
+
+        source= self.engine.motes[neighbor]
+        SourcePreferredParent= source.rpl.getPreferredParent()
+
+
+        list_cell_to_neighbor= self.getDedicatedCells(neighbor)
+        # print('list_cell from mote', self.mote.id, 'to mote', neighbor, list_cell_to_neighbor)
+
+        list_cell_to_mote= source.tsch.getDedicatedCells(self.mote.id)
+        # print('list_cell_to_mote from mote', neighbor, 'to mote',self.mote.id , list_cell_to_mote)
+
+        resultat = ''
+        cause = ''
+        shared_cells = self.mote.tsch.getTxRxSharedCells(neighbor)
+
+        if (pending_DATA_pkts is True):
+            cell = self.schedule[slotOffset]
+
+            if (len(list_cell_to_neighbor) <= 1):# or (len(list_cell_to_mote) != len(list_cell_to_neighbor)) :# (len(list_cell_to_mote) <= 1): # I added the second part to make sure that I have always the same 
+                # print('condition 1')
+                resultat = 'not deleted'
+                cause = 'list size less or equal to one'
+                pass
+            
+            else:
+                
+                # print('condition 3')
+                
+                if (slotOffset in source.sf.locked_slots):
+                    resultat = 'not deleted'
+                    cause = 'locked slot'
+                    pass
+                
+                elif (SourcePreferredParent == self.mote.id):
+                    if ((d.CELLOPTION_SHARED in cell['cellOptions']) and (len(shared_cells) <= 1 )):
+                        resultat = 'not deleted'
+                        cause = 'shared slot and routing loop mote is pref p of neighbor'
+                        pass
+                    else:
+                        del self.schedule[slotOffset]
+                        resultat = 'deleted'
+                        cause = 'no loops and tab size more than one'
+                        # print('cell deleted successfully from', self.mote.id, 'to neighbor', neighbor)
+                
+                elif (self.mote.rpl.getPreferredParent() == neighbor):
+                    if ((d.CELLOPTION_SHARED in cell['cellOptions']) and (len(shared_cells) <= 1 )):
+                        resultat = 'not deleted'
+                        cause = 'shared slot and routing loop neighbor is pref p of mote'
+                        pass
+                    else:
+                        del self.schedule[slotOffset]
+                        resultat = 'deleted'
+                        cause = 'no loops and tab size more than one'
+                        # print('cell deleted successfully from', self.mote.id, 'to neighbor', neighbor)
+
+                else:
+                    del self.schedule[slotOffset]
+                    resultat = 'deleted'
+                    cause = 'no loops and tab size more than one'
+                    # print('cell deleted successfully from', self.mote.id, 'to neighbor', neighbor)
+
+        
+        
+
+
+        # elif ((SourcePreferredParent == self.mote.id) and (len(list_cell_to_neighbor) <= 1)): # the preferred mote of source is the neighbor and we have only one dedicated cell -- do not supress it
+        #     pass
+        # elif ((self.mote.rpl.getPreferredParent() == neighbor) and (len(list_cell_to_neighbor) <= 1)): # the preferred mote of source is the neighbor and we have only one dedicated cell -- do not supress it
+        #     pass 
+
+
+
+        elif ((pending_DATA_pkts is False) and (SourcePreferredParent == self.mote.id)):
+            if(len(list_cell_to_neighbor) <= 1): # the preferred mote of source is the neighbor and we have only one dedicated cell -- do not supress it
+                pass
+            else:
+                cell = self.schedule[slotOffset]
+                if ((d.CELLOPTION_SHARED in cell['cellOptions']) and (len(shared_cells) <= 1 )):
+                    resultat = 'not deleted'
+                    cause = 'shared slot and routing loop mote is pref p of neighbor'
+                    pass
+                else:
+                    del self.schedule[slotOffset]
+                    resultat = 'deleted'
+                    cause = 'no loops, no pending data and tab size more than one'
+                    # print('cell deleted successfully from', self.mote.id, 'to neighbor', neighbor)
+
+
+        elif ((pending_DATA_pkts is False) and (self.mote.rpl.getPreferredParent() == neighbor)):
+            if (len(list_cell_to_neighbor) <= 1): # the preferred mote of source is the neighbor and we have only one dedicated cell -- do not supress it
+                resultat = 'not deleted'
+                cause = 'shared slot and routing loop neighbor is pref p of mote'
+                pass
+            else:
+                cell = self.schedule[slotOffset]
+                if ((d.CELLOPTION_SHARED in cell['cellOptions']) and (len(shared_cells) <= 1 )):
+                    resultat = 'not deleted'
+                    cause = 'shared slot and routing loop mote is pref p of neighbor'
+                    pass
+                else:
+                    del self.schedule[slotOffset]
+                    resultat = 'deleted'
+                    cause = 'no loops, no pending data and tab size more than one'
+                    # print('cell deleted successfully from', self.mote.id, 'to neighbor', neighbor)
+
+        
+
+        else:   
+            # print('condition 4')
+            if (slotOffset in source.sf.locked_slots):
+                resultat = 'not deleted'
+                cause = 'locked slot'
+                pass
+            else:
+                del self.schedule[slotOffset]
+                resultat = 'deleted'
+                cause = 'no loops, no pending data and tab size more than one'
+                # print('cell deleted successfully from', self.mote.id, 'to neighbor', neighbor)
+
+
+        
+
+        # log
+        self.log(
+            SimEngine.SimLog.LOG_MSF_DELETING_CELLS_OP,
+            {
+                '_mote_id':       self.mote.id,
+                'neighbor':       neighbor,
+                'result':    resultat,
+                'cause': cause
+            }
+        )
+
+
+
+
     def enqueue(self, packet, priority=False):
 
-        assert packet['type'] != d.PKT_TYPE_DIO
         assert packet['type'] != d.PKT_TYPE_EB
         assert 'srcMac' in packet['mac']
         assert 'dstMac' in packet['mac']
@@ -263,7 +554,7 @@ class Tsch(object):
 
         # check there is space in txQueue
         if goOn:
-             if (
+            if (
                     (priority is False)
                     and
                     (len(self.txQueue) >= d.TSCH_QUEUE_SIZE)
@@ -281,6 +572,20 @@ class Tsch(object):
 
         # check that I have cell to transmit on
         if goOn:
+            
+# #********************************************************************** normally, no need for this since we keep the gard cell
+
+#             if (packet['type'] == d.PKT_TYPE_DATA) and (not self.getTxCells()) and (not self.getRxCells()): # added Fadoua: if a DATA packet and no dedicated cell to transmit
+#                 # whether drop the DATA packet or call the add cell
+#                 neighbor_id = packet['mac']['dstMac']
+#                 self.mote.sf._request_adding_cells(
+#                         neighbor_id    = neighbor_id,
+#                         num_txrx_cells = 1
+#                     )
+# #**********************************************************************
+            
+
+
             if (not self.getTxCells()) and (not self.getTxRxSharedCells()):
                 # I don't have any cell to transmit on
 
@@ -319,15 +624,38 @@ class Tsch(object):
         assert self.waitingFor == d.WAITING_FOR_TX
 
         # log
+        # assert slot in self.schedule.keys()
+
+        slotoffsets = self.schedule.keys()
+        otherC = []
+
+        # import pdb
+        #pdb.set_trace()
+
+        for key, vals in self.schedule.items():
+            # mytuple=()
+            mytuple=(key, vals['channelOffset'], vals['neighbor'])
+            otherC.append(mytuple)
+
+
         self.log(
             SimEngine.SimLog.LOG_TSCH_TXDONE,
             {
+                
+                'NbrOfCells':     len(self.schedule.keys()),# added Fadoua 
+                'TSCH_schedule':  otherC,# added Fadoua 
+                'selectedCell':   self.schedule[slotOffset], # added Fadoua 
                 '_mote_id':       self.mote.id,
                 'channel':        self.channel,
                 'packet':         self.pktToSend,
                 'isACKed':        isACKed,
+
             }
         )
+
+
+        #*************************************************************************************************
+        # print('the schedule of mote', self.mote.id, 'is cell:', slotOffset, self.getSchedule()[slotOffset])
 
         if self.pktToSend['mac']['dstMac'] == d.BROADCAST_ADDRESS:
             # I just sent a broadcast packet
@@ -335,7 +663,9 @@ class Tsch(object):
             assert self.pktToSend['type'] in [d.PKT_TYPE_EB,d.PKT_TYPE_DIO]
             assert isACKed==False
 
-            # DIOs and EBs were never in txQueue, no need to remove
+            # EBs are never in txQueue, no need to remove.
+            if self.pktToSend['type'] == d.PKT_TYPE_DIO:
+                self.getTxQueue().remove(self.pktToSend)
 
         else:
             # I just sent a unicast packet...
@@ -347,6 +677,7 @@ class Tsch(object):
                     (self.pktToSend['type'] == d.PKT_TYPE_SIXP)
                 ):
                 self.mote.sixp.recv_mac_ack(self.pktToSend)
+            self.mote.rpl.indicate_tx(cell, self.pktToSend['mac']['dstMac'], isACKed)
 
             # update the backoff exponent
             self._update_backoff_state(
@@ -355,9 +686,6 @@ class Tsch(object):
                 isTXSuccess      = isACKed
             )
 
-            # indicate unicast transmission to the neighbor table
-            self.mote.neighbors_indicate_tx(self.pktToSend,isACKed)
-
             if isACKed:
                 # ... which was ACKed
 
@@ -365,10 +693,10 @@ class Tsch(object):
                 cell['numTxAck'] += 1
 
                 # time correction
-                if self.clock.source == self.pktToSend['mac']['dstMac']:
+                if self.clock.source == self.pktToSend['mac']['dstMac']: # this must be for a keep alive pckt because it is the one which dstMac=self.clock.source: Fadoua
                     self.asnLastSync = asn # ACK-based sync
                     self.clock.sync()
-                    self._reset_keep_alive_timer()
+                    self._reset_keep_alive_timer() # Fadoua commented this out to remove keep alive function
 
                 # remove packet from queue
                 self.getTxQueue().remove(self.pktToSend)
@@ -377,11 +705,11 @@ class Tsch(object):
                 # ... which was NOT ACKed
 
                 # decrement 'retriesLeft' counter associated with that packet
-                assert self.pktToSend['mac']['retriesLeft'] > 0
+                assert self.pktToSend['mac']['retriesLeft'] >= 0
                 self.pktToSend['mac']['retriesLeft'] -= 1
 
                 # drop packet if retried too many time
-                if self.pktToSend['mac']['retriesLeft'] == 0:
+                if self.pktToSend['mac']['retriesLeft'] < 0:
 
                     # remove packet from queue
                     self.getTxQueue().remove(self.pktToSend)
@@ -421,8 +749,9 @@ class Tsch(object):
         if packet==None:
             return False # isACKed
 
-        # indicate reception to the neighbor table
-        self.mote.neighbors_indicate_rx(packet)
+        # add the source mote to the neighbor list if it's not listed yet
+        if packet['mac']['srcMac'] not in self.neighbor_table:
+            self.neighbor_table.append(packet['mac']['srcMac'])
 
         # abort if I received a frame for someone else
         if packet['mac']['dstMac'] not in [d.BROADCAST_ADDRESS, self.mote.id]:
@@ -430,20 +759,28 @@ class Tsch(object):
 
         # if I get here, I received a frame at the link layer (either unicast for me, or broadcast)
 
+        
+
+        # #---- added Fadoua 
+        # if packet['type'] == d.PKT_TYPE_DATA:
+        #     self.settings.count= self.count_DATA_pkts_motes_without_dedicated_cell(packet)
+        
+
         # log
         self.log(
             SimEngine.SimLog.LOG_TSCH_RXDONE,
             {
                 '_mote_id':        self.mote.id,
-                'packet':          packet,
+                'packet':          packet
+                # 'count': self.settings.count
             }
         )
 
-        # time correction
+        # time correction using keep alive pckts: Fadoua
         if self.clock.source == packet['mac']['srcMac']:
             self.asnLastSync = asn # packet-based sync
             self.clock.sync()
-            self._reset_keep_alive_timer()
+            self._reset_keep_alive_timer() # Fadoua commented this out to remove keep alive function
 
         # update schedule stats
         if self.getIsSync():
@@ -551,6 +888,7 @@ class Tsch(object):
         # find closest active slot in schedule
 
         if not self.schedule:
+            # print('_tsch_action_active_cell is called to be removed in tsch_schedule_next_active_cell')
             self.engine.removeFutureEvent(uniqueTag=(self.mote.id, '_tsch_action_active_cell'))
             return
 
@@ -582,8 +920,15 @@ class Tsch(object):
         # local shorthands
         asn        = self.engine.getAsn()
         slotOffset = asn % self.settings.tsch_slotframeLength
-        cell       = self.schedule[slotOffset]
 
+        # print ('------------------ self.mote.id', self.mote.id, 'slotOffset', slotOffset, 'self.schedule[slotoffset]', self.schedule[slotOffset])
+
+
+        cell       = self.schedule[slotOffset]
+        
+        # except KeyError:
+        #     import pdb
+        #     pdb.set_trace()
         # make sure this is an active slot
         assert slotOffset in self.schedule
 
@@ -632,21 +977,21 @@ class Tsch(object):
                             # ready for retransmission
                             pass
 
-                # ... if no such packet, probabilistically generate an EB or a DIO
+                # ... if no such packet, probabilistically generate an EB
                 if not self.pktToSend:
-                    if self.mote.clear_to_send_EBs_DIOs_DATA():
-                        prob = self.settings.tsch_probBcast_ebDioProb/(1+self.mote.numNeighbors())
-                        if random.random()<prob:
-                            if random.random()<0.50:
-                                if self.iAmSendingEBs:
-                                    self.pktToSend = self._create_EB()
-                            else:
-                                if self.iAmSendingDIOs:
-                                    self.pktToSend = self.mote.rpl._create_DIO()
+                    if self.mote.clear_to_send_EBs_DATA():
+                        prob = self.settings.tsch_probBcast_ebProb/(1+len(self.neighbor_table))
+                        if (
+                                (random.random() < prob)
+                                and
+                                (self.iAmSendingEBs)
+                            ):
+                            self.pktToSend = self._create_EB()
 
                 # send packet, or receive
                 if self.pktToSend:
                     self._tsch_action_TX(self.pktToSend)
+                    # print('src', self.pktToSend['mac']['srcMac'], 'dst', self.pktToSend['mac']['dstMac']) #*******************************************************************
                 else:
                     self._tsch_action_RX()
             else:
@@ -662,7 +1007,6 @@ class Tsch(object):
                 if pkt['mac']['dstMac'] == cell['neighbor']:
                     _pktToSend = pkt
                     break
-            
             # HACK: don't transmit a frame on a shared link if it has a
             # dedicated TX link to the destination and doesn't have a
             # dedicated RX link from the destination. In such a case, the
@@ -747,6 +1091,10 @@ class Tsch(object):
         self.waitingFor      = d.WAITING_FOR_TX
         self.channel         = cell['channelOffset']
 
+
+        # if (pktToSend['type']== 'DATA'):
+        #     print('asn:', asn, 'cell:', slotOffset, self.channel, 'Packet:', pktToSend['type'] ) #********************************************************
+
     def _tsch_action_RX(self):
 
         # local shorthands
@@ -771,7 +1119,7 @@ class Tsch(object):
         newEB = {
             'type':               d.PKT_TYPE_EB,
             'app': {
-                'join_priority':  self.mote.rpl.getDagRank(),
+                'join_metric':    self.mote.rpl.getDagRank() - 1,
             },
             'mac': {
                 'srcMac':         self.mote.id,            # from mote
@@ -920,15 +1268,23 @@ class Tsch(object):
 
     # Synchronization / Keep-Alive
     def _send_keep_alive_message(self):
-        assert self.clock.source is not None
-        packet = {
-            'type': d.PKT_TYPE_KEEP_ALIVE,
-            'mac': {
-                'srcMac': self.mote.id,
-                'dstMac': self.clock.source
+        
+        # print('clock source of mote', self.mote.id)
+        # assert self.clock.source is not None
+        
+        if not self.getIsSync():  # this is added to see if it resolves the problem of mote sending keepAlive message while it is desynched
+            return
+
+        else:
+
+            packet = {
+                'type': d.PKT_TYPE_KEEP_ALIVE,
+                'mac': {
+                    'srcMac': self.mote.id,
+                    'dstMac': self.clock.source
+                }
             }
-        }
-        self.enqueue(packet)
+            self.enqueue(packet)
         # the next keep-alive event will be scheduled on receiving an ACK
 
     def _start_keep_alive_timer(self):
@@ -941,16 +1297,17 @@ class Tsch(object):
             # do nothing
             pass
         else:
-            # the clock drift of the child against the parent should be less than
-            # macTsRxWait/2 so that they can communicate with each other. Their
-            # clocks can be off by one clock interval at the most. This means, the
-            # clock difference between the child and the parent could be 2 *
-            # clock_interval just after synchronization. then, the possible minimum
-            # guard time is ((macTsRxWait / 2) - (2 * clock_interval)). When
-            # macTsRxWait is 2,200 usec and clock_interval is 30 usec, the
-            # minimum guard time is 1,040 usec. they will be desynchronized
-            # without keep-alive in 16 seconds as the paper titled "Adaptive
-            # Synchronization in IEEE802.15.4e Networks" describes.
+            # the clock drift of the child against the parent should be less
+            # than macTsRxWait/2 so that they can communicate with each
+            # other. Their clocks can be off by one clock interval at the
+            # most. This means, the clock difference between the child and the
+            # parent could be clock_interval just after synchronization. then,
+            # the possible minimum guard time is ((macTsRxWait / 2) -
+            # clock_interval). When macTsRxWait is 2,200 usec and
+            # clock_interval is 30 usec, the minimum guard time is 1,070
+            # usec. they will be desynchronized without keep-alive in 16
+            # seconds as the paper titled "Adaptive Synchronization in
+            # IEEE802.15.4e Networks" describes.
             #
             # the keep-alive interval should be configured in config.json with
             # "tsch_keep_alive_interval".
@@ -986,11 +1343,9 @@ class Clock(object):
         # instance variables which can be accessed directly from outside
         self.source = None
 
-        # short-hands
-        self._max_drift = (
-            float(self.settings.tsch_clock_max_drift_ppm) / pow(10, 6)
-        )
+        # private variables
         self._clock_interval = 1.0 / self.settings.tsch_clock_frequency
+        self._error_rate     = self._initialize_error_rate()
 
         self.desync()
 
@@ -1036,20 +1391,11 @@ class Clock(object):
             # clock.
             error = 0
         else:
-            # the clock drifts by its error rate. for simplicity, we double the
-            # error rate to express clock drift from the time source. That is,
-            # our clock could drift by 30 ppm at the most and the clock of time
-            # source also could drift as well ppm. Then, our clock could drift
-            # by 60 ppm from the clock of the time source.
             assert self._last_clock_access <= self.engine.getAsn()
             slot_duration = self.engine.settings.tsch_slotDuration
             elapsed_slots = self.engine.getAsn() - self._last_clock_access
             elapsed_time  = elapsed_slots * slot_duration
-            error_rate    = random.uniform(
-                (-1 * self._max_drift * 2),
-                (+1 * self._max_drift * 2)
-            )
-            error = elapsed_time * error_rate
+            error = elapsed_time * self._error_rate
 
         # update the variables
         self._accumulated_error += error
@@ -1057,3 +1403,17 @@ class Clock(object):
 
         # return the result
         return self._clock_off_on_sync + self._accumulated_error
+
+    def _initialize_error_rate(self):
+        # private variables:
+        # the clock drifts by its error rate. for simplicity, we double the
+        # error rate to express clock drift from the time source. That is,
+        # our clock could drift by 30 ppm at the most and the clock of time
+        # source also could drift as well ppm. Then, our clock could drift
+        # by 60 ppm from the clock of the time source.
+        #
+        # we assume the error rate is constant over the simulation time.
+        max_drift = (
+            float(self.settings.tsch_clock_max_drift_ppm) / pow(10, 6)
+        )
+        return random.uniform(-1 * max_drift * 2, max_drift * 2)

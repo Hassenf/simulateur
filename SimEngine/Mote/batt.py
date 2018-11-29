@@ -58,8 +58,8 @@ class Batt(object):
             {
                 "_mote_id":   self.mote.id,
                 "charge":     self.chargeConsumed,
-                '_mote_x' : self.mote.x,
-                '_mote_y' : self.mote.y
+                "_mote_x" : self.mote.x,
+                "_mote_y" : self.mote.y
             }
         )
         

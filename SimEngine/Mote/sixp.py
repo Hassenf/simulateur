@@ -102,6 +102,7 @@ class SixP(object):
 
     def send_request(
             self,
+            code, 
             dstMac,
             command,
             metadata           = None,
@@ -117,6 +118,8 @@ class SixP(object):
             timeout_value      = None
         ):
 
+        
+        # print('dans la foction de send_request au milieu de 6P')
         # create a packet
         packet = self._create_packet(
             dstMac             = dstMac,
@@ -133,6 +136,7 @@ class SixP(object):
             payload            = payload
         )
 
+        code = code
         # create & start a transaction
         try:
             transaction = SixPTransaction(self.mote, packet)
@@ -144,7 +148,8 @@ class SixP(object):
             transaction.start(callback, timeout_value)
 
             # enqueue
-            self._tsch_enqueue(packet)
+            self._tsch_enqueue(packet, code)
+            # print(' un request est queued dans le buffer du mote ', self.mote.id, 'vers le neighbor', dstMac, 'with code', code)
 
     def send_response(
             self,
@@ -183,7 +188,8 @@ class SixP(object):
             transaction.start(callback, timeout_value)
 
         # enqueue
-        self._tsch_enqueue(packet)
+        code= 'send response'
+        self._tsch_enqueue(packet, code)
 
     def send_confirmation(
             self,
@@ -209,7 +215,8 @@ class SixP(object):
         transaction.set_callback(callback)
 
         # enqueue
-        self._tsch_enqueue(packet)
+        code= 'send confirmation'
+        self._tsch_enqueue(packet, code)
 
     def add_transaction(self, transaction):
         if transaction.key in self.transaction_table:
@@ -236,11 +243,12 @@ class SixP(object):
 
     # ======================= private ==========================================
 
-    def _tsch_enqueue(self, packet):
+    def _tsch_enqueue(self, packet, code):
         self.log(
             SimEngine.SimLog.LOG_SIXP_TX,
             {
                 '_mote_id': self.mote.id,
+                'code'    : code,
                 'packet':   packet
             }
         )
@@ -684,6 +692,39 @@ class SixPTransaction(object):
             transaction_type = d.SIXP_TRANSACTION_TYPE_2_STEP
 
         return transaction_type
+
+    
+    # added Fadoua: to see if we have add request 
+    def transaction_type(self):
+        if (
+                (
+                    (self.request['app']['code'] == d.SIXP_CMD_ADD)
+                    and
+                    (len(self.request['app']['cellList']) == 0)
+                )
+            ):
+            transaction_type = d.SIXP_CMD_ADD   
+
+        if (
+                (
+                    (self.request['app']['code'] == d.SIXP_CMD_DELETE)
+                    and
+                    (len(self.request['app']['cellList']) == 0)
+                )
+            ):
+            transaction_type = d.SIXP_CMD_DELETE 
+
+        if(
+                (
+                    (self.request['app']['code'] == d.SIXP_CMD_RELOCATE)
+                    and
+                    (len(self.request['app']['candidateCellList']) == 0)
+                )
+            ):
+            transaction_type = d.SIXP_CMD_RELOCATE
+
+        return transaction_type
+
 
     def _get_default_timeout_value(self):
 

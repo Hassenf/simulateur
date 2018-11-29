@@ -12,6 +12,7 @@ PKT_TYPE_DATA                               = 'DATA'
 PKT_TYPE_FRAG                               = 'FRAG'
 PKT_TYPE_JOIN_REQUEST                       = 'JOIN_REQUEST'
 PKT_TYPE_JOIN_RESPONSE                      = 'JOIN_RESPONSE'
+PKT_TYPE_DIS                                = 'DIS'
 PKT_TYPE_DIO                                = 'DIO'
 PKT_TYPE_DAO                                = 'DAO'
 PKT_TYPE_EB                                 = 'EB'
@@ -19,6 +20,8 @@ PKT_TYPE_SIXP                               = '6P'
 PKT_TYPE_KEEP_ALIVE                         = 'KEEP_ALIVE'
 
 # === packet lengths
+PKT_LEN_DIS                                 = 8
+PKT_LEN_DIO                                 = 76
 PKT_LEN_DAO                                 = 20
 PKT_LEN_JOIN_REQUEST                        = 20
 PKT_LEN_JOIN_RESPONSE                       = 20
@@ -26,6 +29,10 @@ PKT_LEN_JOIN_RESPONSE                       = 20
 # === rpl
 RPL_MINHOPRANKINCREASE                      = 256
 RPL_PARENT_SWITCH_THRESHOLD                 = 640
+MAX_DATA_PKTS_THROUGHT_SHARED_CELL          = 5 # addd Fadoua for preferred parent switch if DATA pkts prop exceeds threshold
+
+# === ipv6
+IPV6_DEFAULT_HOP_LIMIT                      = 64
 
 # === sixlowpan
 SIXLOWPAN_REASSEMBLY_BUFFER_LIFETIME        = 60 # in seconds
@@ -71,8 +78,12 @@ MSF_MAX_NUMCELLS                            = 12
 MSF_LIM_NUMCELLSUSED_HIGH                   = 0.75 # in [0-1]
 MSF_LIM_NUMCELLSUSED_LOW                    = 0.25 # in [0-1]
 MSF_HOUSEKEEPINGCOLLISION_PERIOD            = 60   # in seconds
+MSF_REFRESH_SCHEDULING_TABLES_PERIOD        = 80   # in seconds, added Fadoua to refresh scheduling tables and remove guard cells to previous parents
 MSF_RELOCATE_PDRTHRES                       = 0.5  # in [0-1]
 MSF_MIN_NUM_TX                              = 100  # min number for PDR to be significant
+MSF_DEDICATED_CELLS_ALLOCATION_PERIOD       = 1000 # in seconds: added Fadoua for the dedicated cells allocation verif with preferredParent
+MSF_MAX_DEDICATED_CELLS_PER_PARENT          = 30   # Added Fadoua to see if I can limit the addition of cells at some point  
+MSF_MAX_ADD_CELLS_REQUEST_PER_PARENT        = 100
 
 # === tsch
 TSCH_QUEUE_SIZE                             = 10

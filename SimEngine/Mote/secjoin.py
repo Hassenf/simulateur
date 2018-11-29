@@ -51,10 +51,10 @@ class SecJoin(object):
 
         # log
         self.log(
-            SimEngine.SimLog.LOG_JOINED,
+            SimEngine.SimLog.LOG_SECJOIN_JOINED,
             {
                 '_mote_id': self.mote.id,
-                '_mote_x' : self.mote.x,
+                 '_mote_x' : self.mote.x,
                 '_mote_y' : self.mote.y
             }
         )
@@ -67,6 +67,9 @@ class SecJoin(object):
             self.mote.sf.start()
         else:
             self.mote.sf.stop()
+
+        # start RPL
+        self.mote.rpl.start()
 
     def getIsJoined(self):
         return self._isJoined
@@ -170,7 +173,7 @@ class SecJoin(object):
                     }
 
                     # send proxied join response
-                    self.mote.sixlowpan.sendPacket(proxiedJoinResponse)
+                    self.mote.sixlowpan.sendPacket(proxiedJoinResponse, link_local=True)
 
             else:
                 # I'm the pledge
@@ -192,7 +195,18 @@ class SecJoin(object):
     #======================== private ==========================================
 
     def _retransmit_join_request(self):
-        if  self._retransmission_count == self.MAX_RETRANSMIT:
+        if  self.getIsJoined() is True:
+            # do nothing; this could happen when it received a response at the
+            # same slot
+            pass
+        elif self._retransmission_count == self.MAX_RETRANSMIT:
+
+            self.log(
+                SimEngine.SimLog.LOG_SECJOIN_FAILED,
+                {
+                    '_mote_id': self.mote.id,
+                }
+            )
 
             # Back to listening phase, although
             # draft-ietf-6tisch-minimal-security says, "If the retransmission
@@ -201,16 +215,15 @@ class SecJoin(object):
             self._request_timeout      = None
             self._retransmission_count = None
             self.mote.tsch.setIsSync(False)
-            return
         elif self._retransmission_count < self.MAX_RETRANSMIT:
             # double the timeout value
             self._request_timeout *= 2
+            self._retransmission_count += 1
+            # retransmit the request
+            self._send_join_request()
         else:
             # shouldn't happen
             assert False
-
-        self._send_join_request()
-        self._retransmission_count += 1
 
     def _send_join_request(self):
         # log
@@ -234,7 +247,7 @@ class SecJoin(object):
         }
 
         # send join request
-        self.mote.sixlowpan.sendPacket(joinRequest)
+        self.mote.sixlowpan.sendPacket(joinRequest, link_local=True)
 
         # convert seconds to slots
         target_asn = (

@@ -4,15 +4,19 @@
 
 # ========================== imports =========================================
 
+import hashlib
+import platform
 import random
 import sys
 import threading
+import time
 import traceback
 
 import Mote
 import SimSettings
 import SimLog
 import Connectivity
+import SimConfig
 
 # =========================== defines =========================================
 
@@ -150,11 +154,11 @@ class DiscreteEventEngine(threading.Thread):
                 if (
                         (k == 'exec_randomSeed')
                         and
-                        (v == 'random')
+                        (v in ['random', 'context'])
                     ):
                     # put the random seed value in output
                     # exec_randomSeed: random
-                    v = 'random ({0})'.format(self.random_seed)
+                    v = '{0} ({1})'.format(v, self.random_seed)
                 output += ['{0}: {1}'.format(str(k), str(v))]
             output += ['']
             output += ['==============================']
@@ -192,9 +196,10 @@ class DiscreteEventEngine(threading.Thread):
 
     def getAsn(self):
         return self.asn
-        
+
     def get_mote_by_id(self, mote_id):
         return self.motes[mote_id]
+    
     #=== scheduling
     
     def scheduleAtAsn(self, asn, cb, uniqueTag, intraSlotOrder):
@@ -221,7 +226,7 @@ class DiscreteEventEngine(threading.Thread):
     
     def scheduleIn(self, delay, cb, uniqueTag, intraSlotOrder):
         """
-        Schedule an event 'delay' ASNs into the future.
+        Schedule an event 'delay' seconds into the future.
         Also removed all future events with the same uniqueTag.
         """
 
@@ -320,8 +325,18 @@ class SimEngine(DiscreteEventEngine):
         self.settings                   = SimSettings.SimSettings()
 
         # set random seed
-        if self.settings.exec_randomSeed == 'random':
+        if   self.settings.exec_randomSeed == 'random':
             self.random_seed = random.randint(0, sys.maxint)
+        elif self.settings.exec_randomSeed == 'context':
+            # with context for exec_randomSeed, an MD5 value of
+            # 'startTime-hostname-run_id' is used for a random seed
+            startTime = SimConfig.SimConfig.get_startTime()
+            if startTime is None:
+                startTime = time.time()
+            context = (platform.uname()[1], str(startTime), str(self.run_id))
+            md5 = hashlib.md5()
+            md5.update('-'.join(context))
+            self.random_seed = int(md5.hexdigest(), 16) % sys.maxint
         else:
             assert isinstance(self.settings.exec_randomSeed, int)
             self.random_seed = self.settings.exec_randomSeed

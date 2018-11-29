@@ -12,6 +12,8 @@ import random
 # Simulator-wide modules
 import SimEngine
 import MoteDefines as d
+from ast import literal_eval as make_tuple # added Fadoua
+
 
 # =========================== defines =========================================
 
@@ -34,13 +36,26 @@ class Sixlowpan(object):
         # local variables
         self.fragmentation        = globals()[self.settings.fragmentation](self)
 
+        # neighbor_cache: indexed by IPv6 address, maintain MAC addresses
+        self.neighbor_cache       = {}
+
+        # # added Fadoua, this is how to declare a variable dictionary to be global
+        try:
+            _ = Nbr_DATA_pkts_crossing
+        except NameError:
+            global Nbr_DATA_pkts_crossing
+            Nbr_DATA_pkts_crossing = {}
+
+
     #======================== public ==========================================
 
-    def sendPacket(self, packet):
+    def sendPacket(self, packet, link_local=False):
         assert sorted(packet.keys()) == sorted(['type','app','net'])
         assert packet['type'] in [
             d.PKT_TYPE_JOIN_REQUEST,
             d.PKT_TYPE_JOIN_RESPONSE,
+            d.PKT_TYPE_DIS,
+            d.PKT_TYPE_DIO,
             d.PKT_TYPE_DAO,
             d.PKT_TYPE_DATA,
         ]
@@ -48,6 +63,29 @@ class Sixlowpan(object):
         assert 'dstIp' in packet['net']
 
         goOn = True
+
+        # put hop_limit field to the net header
+        packet['net']['hop_limit'] = d.IPV6_DEFAULT_HOP_LIMIT
+
+        # FIXME: this option will be removed when IPv6 address is properly
+        # expressed in this simulator.
+        if link_local is True:
+            packet['net']['link_local'] = True
+        else:
+            packet['net']['link_local'] = False
+
+        # mark a downward packet like 'O' option in RPL Option defined by RFC
+        # 6553
+        if self.mote.dagRoot:
+            packet['net']['downward'] = True
+        else:
+            packet['net']['downward'] = False
+
+       
+        # added Fadoua
+        # self.update_preferred_parent_data_pkts()
+
+
 
         # log
         self.log(
@@ -60,7 +98,17 @@ class Sixlowpan(object):
 
         # add source route, if needed
         if goOn:
-            if (self.mote.dagRoot) and (packet['net']['dstIp'] not in self.mote.neighbors):
+            if (
+                    (self.mote.dagRoot)
+                    and
+                    (
+                        ('link_local' not in packet['net'])
+                        or
+                        (packet['net']['link_local'] is False)
+                    )
+                    and
+                    (packet['net']['dstIp'] not in self.neighbor_cache)
+                ):
                 sourceRoute = self.mote.rpl.computeSourceRoute(packet['net']['dstIp'])
                 if sourceRoute==None:
 
@@ -73,12 +121,14 @@ class Sixlowpan(object):
                     # stop handling this packet
                     goOn = False
                 else:
+                    assert 1 < len(sourceRoute)
+                    packet['net']['dstIp'] = sourceRoute.pop(0)
                     packet['net']['sourceRoute'] = sourceRoute
 
         # find link-layer destination
         if goOn:
-            dstMac = self.mote.rpl.findNextHopId(packet)
-            if dstMac==None:
+            dstMac = self.find_nexthop_mac_addr(packet)
+            if dstMac == None:
                 # we cannot find a next-hop; drop this packet
                 self.mote.drop_packet(
                     packet  = packet,
@@ -103,27 +153,113 @@ class Sixlowpan(object):
             for frag in frags:
                 self.mote.tsch.enqueue(frag)
 
+    #**************************************************************** added Fadoua
+    def count_DATA_pkts_motes_without_dedicated_cell(self, packet):
+        # for quick access; get preferred parent
+        neighbor_id = packet['mac']['srcMac']
+        dedicated_cells = self.mote.tsch.getDedicatedCells(neighbor_id)
+
+        if len(dedicated_cells) == 0: # if we don't have a dedicated cell yet
+            tup = str(((self.mote.id, neighbor_id)))
+            
+            if (packet['type'] == d.PKT_TYPE_DATA): # added Fadoua: if a DATA packet and no dedicated cell to transmit
+                
+                if (tup not in Nbr_DATA_pkts_crossing.keys()):
+                    Nbr_DATA_pkts_crossing[tup] = str(1)
+                else:
+                    Nbr_DATA_pkts_crossing[tup] = str(int(Nbr_DATA_pkts_crossing[tup]) + 1)
+            else:
+                pass
+
+        return(Nbr_DATA_pkts_crossing)
+    
+    #**************************************************************** added Fadoua
+    def update_preferred_parent_data_pkts(self):
+        # at this level, the condition to change the preferredParent is the rank_difference
+        # What I would like to do also, is to trigger the preferredParent change whenever I have too 
+        # many DATA packets being sent from a mote and its preferredParent through the shared cell
+        # because the process of dedicated cell allocation is not being concluded.
+        # so we count the number of DATA packets exchanged between mote and its preferredParent, 
+        # if this number exceeds a threshold, trigger the preferredParent change
+  
+        current_mote_id= self.mote.id
+        preferred_parent = self.mote.rpl.getPreferredParent()
+       
+        for tuple_motes, val in self.settings.count.items():
+
+            tup= make_tuple(tuple_motes)
+            dst, src = tup # we need make sure that dst is a preferred parent of src
+            
+            # print('src', src, 'dst', dst)
+
+            if ((current_mote_id == src) and (dst == preferred_parent) and (int(val) > d.MAX_DATA_PKTS_THROUGHT_SHARED_CELL)): # sending a packet
+                # print('*** valeur of data pkts between', src, dst, 'is',  val)
+                
+                self.mote.rpl.update_preferred_parent('EXTRA')
+
+                # I should reset the counters once the preferred parent is changed 
+
+            
+            else: 
+                pass
+                # do nothing at this level
+
+
+
+
     def recvPacket(self, packet):
 
         assert packet['type'] in [
             d.PKT_TYPE_DATA,
-            d.PKT_TYPE_DAO,
+            d.PKT_TYPE_DIS,
             d.PKT_TYPE_DIO,
+            d.PKT_TYPE_DAO,
             d.PKT_TYPE_FRAG,
             d.PKT_TYPE_JOIN_REQUEST,
             d.PKT_TYPE_JOIN_RESPONSE,
         ]
 
         goOn = True
+        
+        # added Fadoua
+        # count= {}
+        if packet['type'] == d.PKT_TYPE_DATA:
+            self.settings.count= self.count_DATA_pkts_motes_without_dedicated_cell(packet)
+
+        # print('**********************************************')
+
+        # addd Fadoua 
+        asn        = self.engine.getAsn()
+        slotOffset = asn % self.settings.tsch_slotframeLength
+        schedule       = self.mote.tsch.getSchedule()
+        
+        cell={}
+        if slotOffset in self.mote.tsch.getSchedule():
+        
+            cell = schedule[slotOffset] 
 
         # log
         self.log(
             SimEngine.SimLog.LOG_SIXLOWPAN_PKT_RX,
             {
-                '_mote_id':        self.mote.id,
-                'packet':          packet,
+                '_mote_id':     self.mote.id,
+                'packet'  :     packet,
+                'count'   :     self.settings.count, # added Fadoua
+                'selectedCell':   cell
+            
             }
         )
+
+        # add the source mode to the neighbor_cache if it's on-link
+        # FIXME: IPv6 prefix should be examined
+        if (
+                ('srcIp' in packet['net'])
+                and
+                (packet['mac']['srcMac'] == packet['net']['srcIp'])
+                and
+                (packet['net']['srcIp'] not in self.neighbor_cache)
+            ):
+            self.neighbor_cache[packet['net']['srcIp']] = packet['mac']['srcMac']
 
         # hand fragment to fragmentation sublayer. Returns a packet to process further, or else stop.
         if goOn:
@@ -131,6 +267,12 @@ class Sixlowpan(object):
                 packet = self.fragmentation.fragRecv(packet)
                 if not packet:
                     goOn = False
+
+            # source routing header
+            elif 'sourceRoute' in packet['net']:
+                packet['net']['dstIp'] = packet['net']['sourceRoute'].pop(0)
+                if len(packet['net']['sourceRoute']) == 0:
+                    del packet['net']['sourceRoute']
 
         # handle packet
         if goOn:
@@ -152,6 +294,8 @@ class Sixlowpan(object):
                     self.mote.rpl.action_receiveDAO(packet)
                 elif packet['type'] == d.PKT_TYPE_DIO:
                     self.mote.rpl.action_receiveDIO(packet)
+                elif packet['type'] == d.PKT_TYPE_DIS:
+                    self.mote.rpl.action_receiveDIS(packet)
                 elif packet['type'] == d.PKT_TYPE_DATA:
                     self.mote.app.recvPacket(packet)
 
@@ -171,6 +315,19 @@ class Sixlowpan(object):
 
         goOn = True
 
+        if (
+                ('hop_limit' in rxPacket['net'])
+                and
+                (rxPacket['net']['hop_limit'] < 2)
+            ):
+            # we shouldn't receive any frame having hop_limit of 0
+            assert rxPacket['net']['hop_limit'] == 1
+            self.mote.drop_packet(
+                packet = rxPacket,
+                reason = SimEngine.SimLog.DROPREASON_TIME_EXCEEDED
+            )
+            goOn = False
+
         # === create forwarded packet
         if goOn:
             fwdPacket             = {}
@@ -181,13 +338,17 @@ class Sixlowpan(object):
                 fwdPacket['app']  = copy.deepcopy(rxPacket['app'])
             # net
             fwdPacket['net']      = copy.deepcopy(rxPacket['net'])
+            if 'hop_limit' in fwdPacket['net']:
+                assert fwdPacket['net']['hop_limit'] > 1
+                fwdPacket['net']['hop_limit'] -= 1
+
             # mac
             if fwdPacket['type'] == d.PKT_TYPE_FRAG:
                 # fragment already has mac header (FIXME: why?)
                 fwdPacket['mac']  = copy.deepcopy(rxPacket['mac'])
             else:
                 # find next hop
-                dstMac = self.mote.rpl.findNextHopId(fwdPacket)
+                dstMac = self.find_nexthop_mac_addr(fwdPacket)
                 if dstMac==None:
                     # we cannot find a next-hop; drop this packet
                     self.mote.drop_packet(
@@ -226,6 +387,48 @@ class Sixlowpan(object):
                 self.mote.tsch.enqueue(fwdFrag)
 
     #======================== private ==========================================
+
+    def find_nexthop_mac_addr(self, packet):
+        dstIp = packet['net']['dstIp']
+        mac_addr = None
+
+        if   dstIp == d.BROADCAST_ADDRESS:
+            mac_addr = d.BROADCAST_ADDRESS
+
+        elif self.mote.dagRoot:
+            if   dstIp in self.neighbor_cache:
+                # on-link
+                mac_addr = self.neighbor_cache[dstIp]
+            else:
+                # off-link
+                mac_addr = None
+        else:
+            if   self.mote.dodagId is None:
+                # upward during secure join process
+                mac_addr = self.mote.tsch.join_proxy
+            elif (
+                    (
+                        ('link_local' in packet['net'])
+                        and
+                        (packet['net']['link_local'] is True)
+                    )
+                    or
+                    (
+                        ('downward' in packet['net'])
+                        and
+                        (packet['net']['downward'] is True)
+                    )
+                ):
+                if dstIp in self.neighbor_cache:
+                    # on-link
+                    mac_addr = self.neighbor_cache[dstIp]
+                else:
+                    mac_addr = None
+            else:
+                # use the default router (preferred parent)
+                mac_addr = self.mote.rpl.getPreferredParent()
+
+        return mac_addr
 
 
 class Fragmentation(object):
@@ -268,6 +471,7 @@ class Fragmentation(object):
                 'net': {
                     'srcIp':                src_ip_address,
                     'dstIp':                dst_ip_address,
+                    'hop_limit':            hop_limit,
                     'packet_length':        packet_length,
                     'datagram_size':        original_packet_length,
                     'datagram_tag':         tag_for_the_packet,
@@ -300,6 +504,8 @@ class Fragmentation(object):
         """
         assert packet['type'] in [
             d.PKT_TYPE_DATA,
+            d.PKT_TYPE_DIS,
+            d.PKT_TYPE_DIO,
             d.PKT_TYPE_DAO,
             d.PKT_TYPE_JOIN_REQUEST,
             d.PKT_TYPE_JOIN_RESPONSE,
@@ -333,9 +539,9 @@ class Fragmentation(object):
                 if   i == 0:
                     # first fragment
 
-                    # add srcIp, dstIp, sourceRoute
-                    fragment['net']['srcIp']                = packet['net']['srcIp']
-                    fragment['net']['dstIp']                = packet['net']['dstIp']
+                    # copy 'net' header
+                    for key, value in packet['net'].items():
+                        fragment['net'][key] = value
                     if 'sourceRoute' in packet['net']:
                         fragment['net']['sourceRoute']      = copy.deepcopy(packet['net']['sourceRoute'])
                 elif i == (number_of_fragments - 1):
@@ -424,10 +630,10 @@ class Fragmentation(object):
 
             if fragment['net']['datagram_offset'] == 0:
                 # store srcIp and dstIp which only the first fragment has
-                self.reassembly_buffers[srcMac][incoming_datagram_tag]['net'] = {
-                    'srcIp':  fragment['net']['srcIp'],
-                    'dstIp':  fragment['net']['dstIp']
-                }
+                self.reassembly_buffers[srcMac][incoming_datagram_tag]['net'] = copy.deepcopy(fragment['net'])
+                del self.reassembly_buffers[srcMac][incoming_datagram_tag]['net']['datagram_size']
+                del self.reassembly_buffers[srcMac][incoming_datagram_tag]['net']['datagram_offset']
+                del self.reassembly_buffers[srcMac][incoming_datagram_tag]['net']['datagram_tag']
 
             self.reassembly_buffers[srcMac][incoming_datagram_tag]['fragments'].append({
                 'datagram_offset': datagram_offset,
@@ -447,14 +653,8 @@ class Fragmentation(object):
         # construct an original packet
         packet = copy.copy(fragment)
         packet['type'] = fragment['net']['original_packet_type']
-        packet['net'] = copy.deepcopy(fragment['net'])
-        packet['net']['srcIp'] = self.reassembly_buffers[srcMac][incoming_datagram_tag]['net']['srcIp']
-        packet['net']['dstIp'] = self.reassembly_buffers[srcMac][incoming_datagram_tag]['net']['dstIp']
+        packet['net'] = copy.deepcopy(self.reassembly_buffers[srcMac][incoming_datagram_tag]['net'])
         packet['net']['packet_length'] = datagram_size
-        del packet['net']['datagram_tag']
-        del packet['net']['datagram_size']
-        del packet['net']['datagram_offset']
-        del packet['net']['original_packet_type']
 
         # reassembly is done, delete buffer
         del self.reassembly_buffers[srcMac][incoming_datagram_tag]
@@ -523,7 +723,7 @@ class FragmentForwarding(Fragmentation):
 
             if fragment['net']['dstIp'] != self.mote.id:
 
-                dstMac = self.mote.rpl.findNextHopId(fragment)
+                dstMac = self.sixlowpan.find_nexthop_mac_addr(fragment)
                 if dstMac == None:
                     # no route to the destination
                     return

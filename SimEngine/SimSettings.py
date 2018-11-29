@@ -48,6 +48,15 @@ class SimSettings(object):
         self.cpuID                          = cpuID
         self.run_id                         = run_id
 
+        self.count = {}# added Fadoua
+        # try:
+        #     _ = count
+        # except NameError:
+        #     global count
+        #     count = {}
+
+
+
         self.__dict__.update(kwargs)
 
     def setLogDirectory(self, log_directory_name):

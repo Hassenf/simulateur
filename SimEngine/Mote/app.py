@@ -60,15 +60,21 @@ class AppBase(object):
         """
         raise NotImplementedError()  # abstractmethod
 
+    
     def recvPacket(self, packet):
         """Receive a packet destined to this application
         """
+        
+        # added Fadoua
+        # count= self.mote.tsch.count_DATA_pkts_motes_without_dedicated_cell(packet)
+
         # log and mote stats
         self.log(
             SimEngine.SimLog.LOG_APP_RX,
             {
                 '_mote_id': self.mote.id,
                 'packet'  : packet
+            #     'count'   : count # added Fadoua
             }
         )
 
@@ -103,7 +109,7 @@ class AppBase(object):
     def _send_packet(self, dstIp, packet_length):
         
         # abort if I'm not ready to send DATA yet
-        if self.mote.clear_to_send_EBs_DIOs_DATA()==False:
+        if self.mote.clear_to_send_EBs_DATA()==False:
             return
         
         # create
@@ -144,12 +150,17 @@ class AppRoot(AppBase):
     def recvPacket(self, packet):
         assert self.mote.dagRoot
 
+        # # added Fadoua
+        # count = self.mote.tsch.count_DATA_pkts_motes_without_dedicated_cell(packet)
+        # print('srcMac:', packet['mac']['srcMac'], 'dstMac:', packet['mac']['dstMac'], 'counting:', count)
+
         # log and update mote stats
         self.log(
             SimEngine.SimLog.LOG_APP_RX,
             {
                 '_mote_id': self.mote.id,
                 'packet'  : packet
+                # 'count'   : count      # added Fadoua
             }
         )
 
@@ -230,7 +241,7 @@ class AppBurst(AppBase):
     #======================== public ==========================================
 
     def startSendingData(self):
-        # schedule app_burstNumPackets packets at pkScheduleAt
+        # schedule app_burstNumPackets packets in app_burstTimestamp
         self.engine.scheduleIn(
             delay           = self.settings.app_burstTimestamp,
             cb              = self._send_burst_packets,

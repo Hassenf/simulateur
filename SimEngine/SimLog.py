@@ -34,6 +34,7 @@ DROPREASON_NO_TX_CELLS            = 'no_tx_cells'
 DROPREASON_MAX_RETRIES            = 'max_retries'
 DROPREASON_REASSEMBLY_BUFFER_FULL = 'reassembly_buffer_full'
 DROPREASON_VRB_TABLE_FULL         = 'vrb_table_full'
+DROPREASON_TIME_EXCEEDED          = 'time_exceeded'
 
 # === app
 LOG_APP_TX                        = {'type': 'app.tx',                    'keys': ['_mote_id','packet']}
@@ -42,7 +43,8 @@ LOG_APP_RX                        = {'type': 'app.rx',                    'keys'
 # === secjoin
 LOG_SECJOIN_TX                    = {'type': 'secjoin.tx',                'keys': ['_mote_id']}
 LOG_SECJOIN_RX                    = {'type': 'secjoin.rx',                'keys': ['_mote_id']}
-LOG_JOINED                        = {'type': 'secjoin.joined',            'keys': ['_mote_id','_mote_x','_mote_y']}
+LOG_SECJOIN_JOINED                = {'type': 'secjoin.joined',            'keys': ['_mote_id','_mote_x','_mote_y']} # Fadoua
+LOG_SECJOIN_FAILED                = {'type': 'secjoin.failed',            'keys': ['_mote_id']}
 
 # === rpl
 LOG_RPL_DIO_TX                    = {'type': 'rpl.dio.tx',                'keys': ['_mote_id','packet']}
@@ -54,14 +56,23 @@ LOG_RPL_CHURN                     = {'type': 'rpl.churn',                 'keys'
 # === 6LoWPAN
 LOG_SIXLOWPAN_PKT_TX              = {'type': 'sixlowpan.pkt.tx',          'keys': ['_mote_id','packet']}
 LOG_SIXLOWPAN_PKT_FWD             = {'type': 'sixlowpan.pkt.fwd',         'keys': ['_mote_id','packet']}
-LOG_SIXLOWPAN_PKT_RX              = {'type': 'sixlowpan.pkt.rx',          'keys': ['_mote_id','packet']}
+LOG_SIXLOWPAN_PKT_RX              = {'type': 'sixlowpan.pkt.rx',          'keys': ['_mote_id','packet', 'count', 'selectedCell']}
 LOG_SIXLOWPAN_FRAG_GEN            = {'type': 'sixlowpan.frag.gen',        'keys': ['_mote_id','packet']}
 
 # === MSF
 LOG_MSF_CELL_UTILIZATION          = {'type': 'msf.cell_utilization',      'keys': ['_mote_id','neighbor_id','value']}
+LOG_MSF_ERROR_SCHEDULE_FULL       = {'type': 'msf.error.schedule_full',   'keys': ['_mote_id', 'neighbor', 'count_adding_requests']}
+LOG_MSF_DEDICATED_CELL_TO_PREFERREDPARENT       = {'type': 'msf.need.first_dedicated_cell_to_preferredParent',   'keys': ['_mote_id', 'preferredParent_id', 'tx_add_first_dedicated_cell']} # added Fadoua
+LOG_MSF_MORE_DEDICATED_CELL      = {'type': 'msf.more_dedicated_cell',   'keys': ['_mote_id', 'neighbor_id', 'num_tx_cells', 'reason']} # added Fadoua
+LOG_MSF_LESS_DEDICATED_CELL      = {'type': 'msf.less_dedicated_cell',   'keys': ['_mote_id', 'neighbor_id', 'num_tx_cells', 'reason']} # added Fadoua
+LOG_MSF_CREATE_OCCUPIED_CELL_LIST= {'type': 'msf.create_occupied_cell_list',   'keys': ['_mote_id', 'neighbor_id', 'reason', 'occupied_cell_list', 'list_old_parents', 'txQueue']} # added Fadoua
+LOG_MSF_CELL_LIST_PROP           = {'type': 'msf.cell_list_proposed',   'keys': ['_mote_id', 'parent_id', 'cellList', 'code']} # added Fadoua
+LOG_MSF_REFRESHIN_SCHED_TABLES   = {'type': 'msf.refresh_scheduling_tables',   'keys': ['_mote_id', 'old_parent', 'tab_size_mote_to_parent', 'tab_size_parent_to_mote']} # added Fadoua
+LOG_MSF_DELETING_CELLS_OP   = {'type': 'msf.result_of_cell_delete_op',   'keys': ['_mote_id', 'neighbor', 'result', 'cause']} # added Fadoua
+LOG_MSF_REDIRECT_CELLS_TO_NEW_PARENT = {'type': 'msf.redirect_queued_packet_to_new_pref_parent',   'keys': ['_mote_id', 'old_parent', 'new_parent']} # added Fadoua
 
 # === sixp
-LOG_SIXP_TX                       = {'type': 'sixp.tx',                   'keys': ['_mote_id','packet']}
+LOG_SIXP_TX                       = {'type': 'sixp.tx',                   'keys': ['_mote_id','packet', 'code']}
 LOG_SIXP_RX                       = {'type': 'sixp.rx',                   'keys': ['_mote_id','packet']}
 LOG_SIXP_TRANSACTION_COMPLETED    = {'type': 'sixp.comp',                 'keys': ['_mote_id','peerMac','seqNum', 'cmd']}
 LOG_SIXP_TRANSACTION_TIMEOUT      = {'type': 'sixp.timeout',              'keys': ['_mote_id','peerMac','seqNum', 'cmd']}
@@ -70,10 +81,10 @@ LOG_SIXP_TRANSACTION_TIMEOUT      = {'type': 'sixp.timeout',              'keys'
 LOG_TSCH_SYNCED                   = {'type': 'tsch.synced',               'keys': ['_mote_id','_mote_x','_mote_y']}
 LOG_TSCH_DESYNCED                 = {'type': 'tsch.desynced',             'keys': ['_mote_id']}
 LOG_TSCH_EB_TX                    = {'type': 'tsch.eb.tx',                'keys': ['_mote_id','packet']}
-LOG_TSCH_EB_RX                    = {'type': 'tsch.eb.rx',                'keys': ['_mote_id','packet']}
+LOG_TSCH_EB_RX                    = {'type': 'tsch.eb.rx',                'keys': ['_mote_id','packet',  ]}
 LOG_TSCH_ADD_CELL                 = {'type': 'tsch.add_cell',             'keys': ['_mote_id','slotOffset','channelOffset','neighbor','cellOptions']}
-LOG_TSCH_DELETE_CELL              = {'type': 'tsch.delete_cell',          'keys': ['_mote_id','slotOffset','channelOffset','neighbor','cellOptions']}
-LOG_TSCH_TXDONE                   = {'type': 'tsch.txdone',               'keys': ['_mote_id','channel','packet','isACKed']}
+LOG_TSCH_DELETE_CELL              = {'type': 'tsch.delete_cell',          'keys': ['_mote_id','reason', 'slotOffset','channelOffset', 'slotOffsets_inTable', 'neighbor','cellOptions', 'locked_slots']}
+LOG_TSCH_TXDONE                   = {'type': 'tsch.txdone',               'keys': ['_mote_id','channel','packet','isACKed','NbrOfCells','TSCH_schedule','selectedCell']}
 LOG_TSCH_RXDONE                   = {'type': 'tsch.rxdone',               'keys': ['_mote_id','packet']}
 LOG_TSCH_BACKOFF_EXPONENT_UPDATED = {'type': 'tsch.be.updated',           'keys': ['_mote_id','old_be', 'new_be']}
 
