@@ -27,8 +27,7 @@ KPIS = [
     'lifetime_AA_years',
     'sync_time_s',
     'join_time_s',
-    'upstream_num_lost',
-    # 'packet_drops'
+    'upstream_num_lost'
 ]
 
 # ============================ main ===========================================
@@ -64,35 +63,34 @@ def main(options):
                         if key in mote:
                             data[curr_combination].append(mote[key])
 
-        # # plot
+        ## plot
         # try:
-        #   plt.boxplot(data.values())
-        #   plt.xticks(range(1, len(data) + 1), data.keys())
-        #   plt.ylabel(key)
-        #   savefig(subfolder, key)
-        #   plt.clf()
+        #     plt.boxplot(data.values())
+        #     plt.xticks(range(1, len(data) + 1), data.keys())
+        #     plt.ylabel(key)
+        #     savefig(subfolder, key)
+        #     plt.clf()
         # except TypeError:
         #     print "Cannot create a plot for {0}.".format(key)
+    
 
-#- Fadoua -------------------------------------- 
-        #print(data.values())
-        #print('data.values',data.values()[0])
-        
+
         try:
             x=len(data.values()[0]) # --- This is the 
             xx= [x for x in range(1, x+1)]
             #print('nbr f runs',xx)
         
             plt.plot(xx,data.values()[0]);
-            plt.xlabel('Nbr_of_Runs')
+            plt.xlabel('joined motes')
             plt.ylabel(key)
             savefig(subfolder, key)
             plt.clf()
         except TypeError:
             print "Cannot create a plot for {0}.".format(key)
 
-#---------------------------------------
-        
+
+
+
     print "Plots are saved in the {0} folder.".format(subfolder)
 
 # =========================== helpers =========================================

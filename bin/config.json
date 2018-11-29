@@ -2,26 +2,27 @@
     "version":                                             0,
     "execution": {
         "numCPUs":                                         1,
-        "numRuns":                                         3
+        "numRuns":                                         1
     },
     "settings": {
         "combination": {
-            "exec_numMotes":                               [20]
+            "exec_numMotes":                               [80]
         },
         "regular": {
-            "exec_numSlotframesPerRun":                    10000,
-            "exec_randomSeed":                             "random",
+            "exec_numSlotframesPerRun":                 10000,
+            "exec_randomSeed":                             7208558183980040464,
 
             "secjoin_enabled":                             true,
 
             "app":                                         "AppPeriodic",
-            "app_pkPeriod":                                10,
+            "app_pkPeriod":                                30, 
             "app_pkPeriodVar":                             0.05,
             "app_pkLength":                                90,
             "app_burstTimestamp":                          null,
             "app_burstNumPackets":                         0,
 
             "rpl_daoPeriod":                               60,
+            "rpl_extensions":                              ["dis_unicast"],
 
             "fragmentation":                               "FragmentForwarding",
             "sixlowpan_reassembly_buffers_num":            1,
@@ -30,26 +31,27 @@
             "tsch_max_payload_len":                        90,
 
             "sf_class":                                    "MSF",
+            "scenario":                                    "packetRedirection",
 
             "tsch_slotDuration":                           0.010,
             "tsch_slotframeLength":                        101,
-            "tsch_probBcast_ebDioProb":                    0.33,
-			"tsch_clock_max_drift_ppm":                    30,
+            "tsch_probBcast_ebProb":                       0.16,
+            "tsch_clock_max_drift_ppm":                    30,
             "tsch_clock_frequency":                        32768,
             "tsch_keep_alive_interval":                    10,
 
             "charge_log_period_s":                         10,
 
             "conn_class":                                  "Random",
-			"rw"		:								   "w",
             "conn_trace":                                  null,
+			"rw"		:								   "w",
+
 
             "conn_random_square_side":                     2.000,
             "conn_random_init_min_pdr":                    0.5,
             "conn_random_init_min_neighbors":              3,
 
             "phy_numChans":                                16
-
         }
     },
     "logging":                                             "all",

@@ -13,6 +13,7 @@ import json
 import glob
 
 from SimEngine import SimLog
+import SimEngine.Mote.MoteDefines as d
 
 # =========================== defines =========================================
 
@@ -57,7 +58,6 @@ def kpis_all(inputfile):
             mote_x     = logline['_mote_x']  # --- added Fadoua
             mote_y     = logline['_mote_y']
 
-
             # only log non-dagRoot sync times
             if mote_id == DAGROOT_ID:
                 continue
@@ -72,7 +72,7 @@ def kpis_all(inputfile):
                                                      'y': mote_y  
                                                     } #--- added Fadoua
 
-        elif logline['_type'] == SimLog.LOG_JOINED['type']:
+        elif logline['_type'] == SimLog.LOG_SECJOIN_JOINED['type']:
             # joined
 
             # shorthands
@@ -80,7 +80,6 @@ def kpis_all(inputfile):
             asn        = logline['_asn']
             mote_x     = logline['_mote_x']  # --- added Fadoua
             mote_y     = logline['_mote_y']
-
 
             # only log non-dagRoot join times
             if mote_id == DAGROOT_ID:
@@ -118,32 +117,13 @@ def kpis_all(inputfile):
 
             allstats[run_id][srcIp]['upstream_pkts'][appcounter]['tx_asn'] = tx_asn
 
-        elif logline['_type'] == SimLog.LOG_SIXLOWPAN_PKT_FWD['type']:
-            # packet transmission
-
-            # shorthands
-            pk_type    = logline['packet']['type']
-
-            # only consider DATA packets
-            if pk_type != 'DATA':
-                continue
-
-            srcIp      = logline['packet']['net']['srcIp']
-            dstIp      = logline['packet']['net']['dstIp']
-            appcounter = logline['packet']['app']['appcounter']
-
-            # only consider upstream packets
-            if dstIp != DAGROOT_IP:
-                continue
-
-            allstats[run_id][srcIp]['upstream_pkts'][appcounter]['hops'] += 1
-
         elif logline['_type'] == SimLog.LOG_APP_RX['type']:
             # packet reception
 
             # shorthands
             srcIp      = logline['packet']['net']['srcIp']
             dstIp      = logline['packet']['net']['dstIp']
+            hop_limit  = logline['packet']['net']['hop_limit']
             appcounter = logline['packet']['app']['appcounter']
             rx_asn     = logline['_asn']
 
@@ -151,7 +131,9 @@ def kpis_all(inputfile):
             if dstIp != DAGROOT_IP:
                 continue
 
-            allstats[run_id][srcIp]['upstream_pkts'][appcounter]['hops'] += 1
+            allstats[run_id][srcIp]['upstream_pkts'][appcounter]['hops']   = (
+                d.IPV6_DEFAULT_HOP_LIMIT - hop_limit + 1
+            )
             allstats[run_id][srcIp]['upstream_pkts'][appcounter]['rx_asn'] = rx_asn
 
         elif logline['_type'] == SimLog.LOG_PACKET_DROPPED['type']:
@@ -171,6 +153,7 @@ def kpis_all(inputfile):
 
             allstats[run_id][mote_id]['packet_drops'][reason] += 1
 
+        
         #------- Fadoua ------------------------------------------------
         elif logline['_type'] == SimLog.LOG_PROP_INTERFERENCE['type']:
             # collided cells
@@ -182,15 +165,16 @@ def kpis_all(inputfile):
             # populate
             if mote_id not in allstats[run_id]:
                 allstats[run_id][mote_id] = {}
-            if 'collided_cells' not in allstats[run_id][mote_id]:
-                allstats[run_id][mote_id]['collided_cells'] = {}
-            if interference_type not in allstats[run_id][mote_id]['collided_cells']:
-                allstats[run_id][mote_id]['collided_cells'][interference_type] = 0
+            if 'collided_packets' not in allstats[run_id][mote_id]:
+                allstats[run_id][mote_id]['collided_packets'] = {}
+            if interference_type not in allstats[run_id][mote_id]['collided_packets']:
+                allstats[run_id][mote_id]['collided_packets'][interference_type] = 0
 
-            allstats[run_id][mote_id]['collided_cells'][interference_type] += 1
+            allstats[run_id][mote_id]['collided_packets'][interference_type] += 1
 
         #------- Fadoua ------------------------------------------------
-        
+
+
         elif logline['_type'] == SimLog.LOG_BATT_CHARGE['type']:
             # battery charge
 
@@ -214,9 +198,6 @@ def kpis_all(inputfile):
 
             allstats[run_id][mote_id]['charge_asn'] = asn
             allstats[run_id][mote_id]['charge']     = charge
-            allstats[run_id][mote_id]['location'] = {'x': mote_x,
-                                                     'y': mote_y  
-                                                    } #--- added Fadoua
 
     # === compute advanced motestats
 
@@ -229,13 +210,17 @@ def kpis_all(inputfile):
                 elif 'charge_asn' not in motestats:
                     motestats['WARNING'] = "log doesn't have battery info"
                 else:
-                    # ave_current, lifetime_AA
-                    motestats['ave_current_uA'] = motestats['charge']/float((motestats['charge_asn']-motestats['sync_asn']) * file_settings['tsch_slotDuration'])
-                    if motestats['ave_current_uA'] > 0:
-                        motestats['lifetime_AA_years'] = (2200*1000/float(motestats['ave_current_uA']))/(24.0*365)
-                    else:
+                    # avg_current, lifetime_AA
+                    if (
+                            (motestats['charge'] <= 0)
+                            or
+                            (motestats['charge_asn'] == motestats['sync_asn'])
+                        ):
                         motestats['lifetime_AA_years'] = 'N/A'
-
+                    else:
+                        motestats['avg_current_uA'] = motestats['charge']/float((motestats['charge_asn']-motestats['sync_asn']) * file_settings['tsch_slotDuration'])
+                        assert motestats['avg_current_uA'] > 0
+                        motestats['lifetime_AA_years'] = (2200*1000/float(motestats['avg_current_uA']))/(24.0*365)
                 if 'join_asn' in motestats:
                     # latencies, upstream_num_tx, upstream_num_rx, upstream_num_lost
                     motestats['latencies']         = []
