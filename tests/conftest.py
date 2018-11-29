@@ -6,6 +6,7 @@ from SimEngine import SimConfig,   \
                       SimLog,      \
                       SimEngine,   \
                       Connectivity
+from SimEngine.Mote.rpl import RplOFNone
 import SimEngine.Mote.MoteDefines as d
 import test_utils                 as u
 
@@ -23,7 +24,11 @@ def repeat4times(request):
 @pytest.fixture(scope="function")
 def sim_engine(request):
 
-    def create_sim_engine(diff_config={}, force_initial_routing_and_scheduling_state=False):
+    def create_sim_engine(
+            diff_config                                = {},
+            force_initial_routing_and_scheduling_state = False,
+            run_id                                     = None
+        ):
         
         engine = None
         
@@ -62,7 +67,7 @@ def sim_engine(request):
         sim_log.set_log_filters('all') # do not log
 
         # create sim engine
-        engine = SimEngine.SimEngine()
+        engine = SimEngine.SimEngine(run_id=run_id)
         
         # force initial routing and schedule, if appropriate
         if force_initial_routing_and_scheduling_state:
@@ -78,18 +83,18 @@ def set_initial_routing_and_scheduling_state(engine):
     # root is mote 0
     root = engine.motes[0]
     root.setDagRoot()
-    root.rpl.setRank(256)
+    root.rpl.of = RplOFNone(root.rpl)
+    root.rpl.of.set_rank(256)
     
     # all nodes are sync'ed and joined, all services activated
     for m in engine.motes:
         m.tsch.setIsSync(True)        # forced
         m.secjoin.setIsJoined(True)   # forced (fixture)
         m.tsch.startSendingEBs()      # forced
-        m.tsch.startSendingDIOs()     # forced
         m.sf.start()        # forced
         m.dodagId = root.id           # forced
         if m.dagRoot==False:
-            m.rpl.startSendingDAOs()  # forced
+            m.rpl.trickle_timer.start()
             m.app.startSendingData()  # forced
     
     # start scheduling from slot offset 1 upwards
@@ -121,13 +126,13 @@ def set_initial_routing_and_scheduling_state(engine):
             if pdr_not_null(child,parent,engine):
                 # there is a non-zero PDR on the child->parent link
 
-                # update both child's and parent's neighbor table
-                child._add_neighbor(parent.id)
-                parent._add_neighbor(child.id)
+                # sync child's clock with parent's clock
+                child.tsch.clock.sync(parent.id)
                 # set child's preferredparent to parent
-                child.rpl.setPreferredParent(parent.id)
+                child.rpl.of = RplOFNone(child.rpl)
+                child.rpl.of.set_preferred_parent(parent.id)
                 # set child's rank
-                child.rpl.setRank(parent.rpl.getRank()+512)
+                child.rpl.of.set_rank(parent.rpl.get_rank()+512)
                 # record the child->parent relationship at the root (for source routing)
                 root.rpl.addParentChildfromDAOs(
                     child_id  = child.id,

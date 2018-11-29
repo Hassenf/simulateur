@@ -1,11 +1,27 @@
 """
 Tests for SimEngine.Connectivity
 """
+import itertools
 import os
+import random
+import shutil
+import types
+
+from scipy.stats import t
+from numpy import average, std
+from math import sqrt
 
 import test_utils as u
+from SimEngine import SimLog
+
 
 #============================ helpers =========================================
+
+def destroy_all_singletons(engine):
+    engine.destroy()
+    engine.connectivity.destroy()
+    engine.settings.destroy()
+    SimLog.SimLog().destroy()
 
 def print_connectivity_matrix(matrix):
     output         = []
@@ -24,13 +40,14 @@ def print_connectivity_matrix(matrix):
         line      += [str(source)]
         for dest in matrix:
             if source == dest:
-                continue
-            line  += [str(matrix[source][dest][0]['pdr'])]
+                line += ['N/A']
+            else:
+                line  += [str(matrix[source][dest][0]['pdr'])]
         line       = '\t|'.join(line)
         output    += [line]
 
     output         = '\n'.join(output)
-    #print output
+    print output
 
 #============================ tests ===========================================
 
@@ -136,7 +153,7 @@ class TestRandom(object):
             }
         )
 
-        # PDR and RSSI should not be always the same over the slots
+        # PDR and RSSI should not change over time
         for src, dst in zip(sim_engine.motes[:-1], sim_engine.motes[1:]):
             for channel in range(sim_engine.settings.phy_numChans):
                 pdr  = []
@@ -160,13 +177,13 @@ class TestRandom(object):
                     # proceed the simulator
                     u.run_until_asn(sim_engine, sim_engine.getAsn() + 1)
 
-                # compare two consecutive PDRs and RSSIs; if we have even one
-                # True in the comparison, i != j, something should be wrong
-                # with PisterHackModel class
-                assert sum([(i != j) for i, j in zip(pdr[:-1], pdr[1:])])   > 0
-                assert sum([(i != j) for i, j in zip(rssi[:-1], rssi[1:])]) > 0
+                # compare two consecutive PDRs and RSSIs. They should be always
+                # the same value. Then, the following condition of 'i != j'
+                # should always false
+                assert sum([(i != j) for i, j in zip(pdr[:-1], pdr[1:])])   == 0
+                assert sum([(i != j) for i, j in zip(rssi[:-1], rssi[1:])]) == 0
 
-        # PDR and RSSI should be the same within the same slot
+        # PDR and RSSI should be the same within the same slot, of course
         for src, dst in zip(sim_engine.motes[:-1], sim_engine.motes[1:]):
             for channel in range(sim_engine.settings.phy_numChans):
                 pdr  = []
@@ -192,3 +209,86 @@ class TestRandom(object):
                 # be same (all comparison, i != j, should be False).
                 assert sum([(i != j) for i, j in zip(pdr[:-1], pdr[1:])])   == 0
                 assert sum([(i != j) for i, j in zip(rssi[:-1], rssi[1:])]) == 0
+
+
+    def test_context_random_seed(self, sim_engine):
+        diff_config = {
+            'exec_numMotes'  : 10,
+            'exec_randomSeed': 'context',
+            'conn_class'     : 'Random'
+        }
+
+        # ConnectivityRandom should create an identical topology for two
+        # simulations having the same run_id
+        sf_class_list = ['SFNone', 'MSF']
+        coordinates = {}
+        for sf_class, run_id in itertools.product(sf_class_list, [1, 2]):
+            diff_config['sf_class'] = sf_class
+            engine = sim_engine(
+                diff_config                                = diff_config,
+                force_initial_routing_and_scheduling_state = False,
+                run_id                                     = run_id
+            )
+            coordinates[(sf_class, run_id)] = engine.connectivity.coordinates
+            destroy_all_singletons(engine)
+
+        # We have four sets of coordinates:
+        # - coordinates of ('SFNone', run_id=1) and ('MSF',    1) should be
+        #   identical
+        # - coordinates of ('SFNone', run_id=2) and ('MSF',    2) should be
+        #   identical
+        # - coordinates of ('SFNone,  run_id=1) and ('SFNone', 2) should be
+        #   different
+        # - coordinates of ('MSF',    run_id=1) and ('MSF',    2) should be
+        #   different
+        assert coordinates[('SFNone', 1)] == coordinates[('MSF', 1)]
+        assert coordinates[('SFNone', 2)] == coordinates[('MSF', 2)]
+        assert coordinates[('SFNone', 1)] != coordinates[('SFNone', 2)]
+        assert coordinates[('MSF', 1)]    != coordinates[('MSF', 2)]
+
+#=== test for LockOn mechanism that is implemented in propagate()
+def test_lockon(sim_engine):
+    sim_engine = sim_engine(
+        diff_config = {
+            'exec_numMotes'           : 2,
+            'exec_numSlotframesPerRun': 1,
+            'conn_class'              : 'Linear',
+            'app_pkPeriod'            : 0,
+            'secjoin_enabled'         : False,
+            'sf_class'                : 'SFNone',
+            'tsch_probBcast_ebProb'   : 0,
+            'rpl_daoPeriod'           : 0
+        }
+    )
+
+    # short-hands
+    root  = sim_engine.motes[0]
+    hop_1 = sim_engine.motes[1]
+
+    # force hop_1 to join the network
+    eb = root.tsch._create_EB()
+    hop_1.tsch._tsch_action_receiveEB(eb)
+    dio = root.rpl._create_DIO()
+    dio['mac'] = {'srcMac': root.id}
+    hop_1.rpl.action_receiveDIO(dio)
+
+    # let hop_1 send an application packet
+    hop_1.app._send_a_single_packet()
+
+    # force random.random() to return 1, which will cause any frame not to be
+    # received by anyone
+    _random = random.random
+    def return_one(self):
+        return float(1)
+    random.random = types.MethodType(return_one, random)
+
+    # run the simulation
+    u.run_until_end(sim_engine)
+
+    # put the original random() back to random
+    random.random = _random
+
+    # root shouldn't lock on the frame hop_1 sent since root is not expected to
+    # receive even the preamble of the packet.
+    logs = u.read_log_file([SimLog.LOG_PROP_DROP_LOCKON['type']])
+    assert len(logs) == 0

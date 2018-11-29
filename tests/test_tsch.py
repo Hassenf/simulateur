@@ -72,7 +72,7 @@ def test_removeTypeFromQueue(sim_engine):
         {'type': 3},
         {'type': 5},
     ]
-    mote.tsch.removeTypeFromQueue(type=3)
+    mote.tsch.remove_frame_from_tx_queue(type=3)
     assert mote.tsch.txQueue == [
         {'type': 1},
         {'type': 2},
@@ -108,7 +108,7 @@ def test_tx_cell_selection(
             'conn_class'               : 'Linear',
             'app_pkPeriod'             : 0,
             'app_pkPeriodVar'          : 0,
-            'tsch_probBcast_ebDioProb' : 0,
+            'tsch_probBcast_ebProb'    : 0,
         },
         force_initial_routing_and_scheduling_state = True
     )
@@ -120,7 +120,7 @@ def test_tx_cell_selection(
     packet = {
         'type':         packet_type,
         'app': {
-            'rank':     mote.rpl.rank,
+            'rank':     mote.rpl.get_rank(),
         },
         'net': {
             'srcIp':    mote.id
@@ -195,6 +195,52 @@ def test_network_advertisement(sim_engine, fixture_adv_frame):
 def cell_type(request):
     return request.param
 
+def test_retransmission_count(sim_engine):
+    sim_engine = sim_engine(
+        diff_config = {
+            'exec_numSlotframesPerRun': 10,
+            'exec_numMotes'           : 2,
+            'app_pkPeriod'            : 0,
+            'rpl_daoPeriod'           : 0,
+            'tsch_probBcast_ebProb'   : 0,
+            'secjoin_enabled'         : False,
+            'tsch_keep_alive_interval': 0,
+            'conn_class'              : 'Linear'
+        },
+        force_initial_routing_and_scheduling_state = True
+    )
+
+    # short-hands
+    root = sim_engine.motes[0]
+    hop1 = sim_engine.motes[1]
+    connectivity_matrix = sim_engine.connectivity.connectivity_matrix
+
+    # stop DIO timer
+    root.rpl.trickle_timer.stop()
+    hop1.rpl.trickle_timer.stop()
+
+    # set 0% of PDR to the link between the two motes
+    for channel in range(sim_engine.settings.phy_numChans):
+        connectivity_matrix[root.id][hop1.id][channel]['pdr'] = 0
+        connectivity_matrix[hop1.id][root.id][channel]['pdr'] = 0
+
+    # make hop1 send an application packet
+    hop1.app._send_a_single_packet()
+
+    # run the simulation
+    u.run_until_end(sim_engine)
+
+    # check the log
+    tx_logs = u.read_log_file([SimLog.LOG_TSCH_TXDONE['type']])
+
+    # hop1 should send out the frame six times: 1 for the initial transmission
+    # and 5 for retransmissions
+    assert len(tx_logs) == 1 + d.TSCH_MAXTXRETRIES
+    for tx_log in tx_logs:
+        assert tx_log['packet']['type'] == d.PKT_TYPE_DATA
+        assert tx_log['packet']['net']['srcIp'] == hop1.id
+        assert tx_log['packet']['app']['appcounter'] == 0
+
 def test_retransmission_backoff_algorithm(sim_engine, cell_type):
     sim_engine = sim_engine(
         diff_config = {
@@ -225,6 +271,7 @@ def test_retransmission_backoff_algorithm(sim_engine, cell_type):
     # make hop_1 ready to send an application packet
     assert hop_1.dodagId is None
     dio = root.rpl._create_DIO()
+    dio['mac'] = {'srcMac': root.id}
     hop_1.rpl.action_receiveDIO(dio)
     assert hop_1.dodagId is not None
 
@@ -248,7 +295,7 @@ def test_retransmission_backoff_algorithm(sim_engine, cell_type):
         assert len(hop_1.tsch.getTxRxSharedCells(root.id)) == 1
 
     # make sure hop_1 send a application packet when the simulator starts
-    hop_1.txQueue = []
+    hop_1.tsch.txQueue = []
     hop_1.app._send_a_single_packet()
     assert len(hop_1.tsch.txQueue) == 1
 
@@ -280,9 +327,7 @@ def test_retransmission_backoff_algorithm(sim_engine, cell_type):
             ):
             app_data_tx_logs.append(log)
 
-    # in this implementation, TSCH_MAXTXRETRIES includes the very first
-    # transmission
-    assert len(app_data_tx_logs) == d.TSCH_MAXTXRETRIES
+    assert len(app_data_tx_logs) == 1 + d.TSCH_MAXTXRETRIES
 
     # all transmission should have happened only on the dedicated cell if it's
     # available (it shouldn't transmit a unicast frame to the root on the
@@ -305,3 +350,19 @@ def test_retransmission_backoff_algorithm(sim_engine, cell_type):
     timestamps = [log['_asn'] for log in app_data_tx_logs]
     diffs = map(lambda x: x[1] - x[0], zip(timestamps[:-1], timestamps[1:]))
     assert len([diff for diff in diffs if diff != slotframe_length]) > 0
+
+def test_eb_by_root(sim_engine):
+    sim_engine = sim_engine(
+        diff_config = {
+            'exec_numMotes': 1
+        }
+    )
+
+    root = sim_engine.motes[0]
+    eb = root.tsch._create_EB()
+
+    # From Section 6.1 of RFC 8180:
+    #   ...
+    #   DAGRank(rank(0))-1 = 0 is compliant with 802.15.4's requirement of
+    #   having the root use Join Metric = 0.
+    assert eb['app']['join_metric'] == 0
