@@ -7,9 +7,9 @@ Branch    | Build Status
 
 Core Developers:
 
-* Mališa Vučinić (malisa.vucinic@inria.fr)
 * Yasuyuki Tanaka (yasuyuki.tanaka@inria.fr)
 * Keoma Brun-Laguna (keoma.brun@inria.fr)
+* Mališa Vučinić (malisa.vucinic@inria.fr)
 * Thomas Watteyne (thomas.watteyne@inria.fr)
 
 Contributers:
@@ -19,6 +19,12 @@ Contributers:
 * Xavier Vilajosana (xvilajosana@eecs.berkeley.edu)
 * Esteban Municio (esteban.municio@uantwerpen.be)
 * Glenn Daneels (glenn.daneels@uantwerpen.be)
+
+## Publishing
+
+If you publish an academic paper using the results of the 6TiSCH Simulator, please cite:
+
+E. Municio, G. Daneels, M. Vucinic, S. Latre, J. Famaey, Y. Tanaka, K. Brun, K. Muraoka, X. Vilajosana, and T. Watteyne, "Simulating 6TiSCH Networks", Wiley Transactions on Emerging Telecommunications (ETT), 2018.
 
 ## Scope
 
@@ -73,7 +79,7 @@ Simulated protocol stack
 
 The simulator can be run on a cluster system. Here is an example for a cluster built with OAR and Conda:
 
-1. Edit `config.py
+1. Edit `config.json`
     * Set `numCPUs` with `-1` (use all the available CPUs/cores) or a specific number of CPUs to be used
     * Set `log_directory_name` with `"hostname"`
 1. Create a shell script, `runSim.sh`, having the following lines:
@@ -194,7 +200,7 @@ See `bin/config.json` to find  what parameters should be set and how they are co
 
 ### more on connectivity models
 
-#### using a `k7` connectivity model
+#### using a *k7* connectivity model
 
 `k7` is a popular format for connectivity traces. 
 You can run the simulator using connectivity traces in your K7 file instead of using the propagation model.
